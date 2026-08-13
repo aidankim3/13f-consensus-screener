@@ -333,11 +333,21 @@ py -m venv .venv
 
 GitHub: https://github.com/aidankim3/13f-consensus-screener
 
-data/holdings.db 같은 로컬 캐시는 `.gitignore`로 제외되어 저장소에 없다 —
-배포된 인스턴스는 처음 열릴 때 (또는 사이드바 "데이터 관리"에서 언제든)
-"지금 EDGAR에서 데이터 가져오기" 버튼으로 직접 SEC EDGAR/OpenFIGI/Yahoo
-Finance에서 데이터를 받아 스스로 초기화한다 (`src/app/main.py`의
-`_build_data_inline()`이 `src/edgar/build.py`의 파이프라인을 그대로 재사용).
+`data/market.db`(티커/가격 캐시)와 `data/seen_filings.db`(알림 상태) 같은
+로컬 캐시는 `.gitignore`로 제외되어 저장소에 없고, 배포된 인스턴스는
+사이드바 "데이터 관리"의 "EDGAR에서 최신 데이터 다시 받기" 버튼으로 직접
+SEC EDGAR/OpenFIGI/Yahoo Finance에서 데이터를 받아 스스로 갱신한다
+(`src/app/main.py`의 `_build_data_inline()`이 `src/edgar/build.py`의
+파이프라인을 그대로 재사용).
+
+`data/holdings.db`는 예외적으로 `.gitignore`에서 `!data/holdings.db`로
+다시 포함시켜 **저장소에 커밋되어 있다** — 82명 × 8분기를 콜드 스타트로
+전부 받으면 SEC 레이트리밋(초당 8회) 때문에 수 분~수십 분이 걸리는데,
+Render/Streamlit Cloud 같은 플랫폼의 요청 타임아웃에 걸릴 위험이 있어서다.
+미리 빌드해둔 스냅샷을 커밋해두면 사이트가 열리자마자 바로 쓸 수 있고,
+"다시 받기" 버튼으로 언제든 최신화할 수 있다. investors.yaml을 바꾸거나
+데이터를 최신화하려면 로컬에서 `python -m src.edgar.build`를 돌린 뒤
+`data/holdings.db`를 커밋·푸시하면 된다.
 
 ### Render.com (현재 사용 중)
 

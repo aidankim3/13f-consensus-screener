@@ -496,12 +496,14 @@ def main() -> None:
     )
 
     if not DB_PATH.exists():
+        n_investors = len(load_investors())
         st.warning(
-            "아직 데이터가 없습니다. SEC EDGAR에서 6명의 투자자의 최근 8개 분기 "
-            "13F 공시를 직접 받아와야 합니다 (1~2분 정도 걸립니다)."
+            f"아직 데이터가 없습니다. SEC EDGAR에서 {n_investors}명의 투자자의 최근 8개 분기 "
+            "13F 공시를 직접 받아와야 합니다 (수 분~수십 분 걸릴 수 있습니다 — 투자자 수가 "
+            "많아 SEC 요청 제한 속도로 순차 처리됩니다)."
         )
         if st.button("지금 EDGAR에서 데이터 가져오기", type="primary"):
-            with st.spinner("SEC EDGAR에서 데이터를 가져오는 중... (1~2분 소요)"):
+            with st.spinner(f"SEC EDGAR에서 {n_investors}명의 데이터를 가져오는 중... 페이지를 닫지 마세요"):
                 try:
                     _build_data_inline()
                 except Exception as exc:
@@ -526,7 +528,7 @@ def main() -> None:
     with st.sidebar.expander("데이터 관리"):
         latest = holdings.loc[holdings["period_rank"] == 0, "period_date"].max()
         st.caption(f"현재 데이터 최신 기준일: {latest.date() if pd.notna(latest) else '알 수 없음'}")
-        if st.button("EDGAR에서 최신 데이터 다시 받기 (1~2분 소요)"):
+        if st.button("EDGAR에서 최신 데이터 다시 받기 (수 분 소요)"):
             with st.spinner("SEC EDGAR에서 데이터를 다시 가져오는 중..."):
                 try:
                     _build_data_inline()

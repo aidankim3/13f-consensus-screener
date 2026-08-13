@@ -6,5 +6,14 @@ data/*.db
 data/*.parquet
 data/raw/
 data/logs/
+
+# Pre-built holdings snapshot IS committed, unlike the other data/*.db
+# files (market.db price/ticker cache, seen_filings.db alert state) --
+# 82 investors x 8 quarters takes long enough to fetch cold that a fresh
+# Render/Streamlit Cloud deploy risks hitting the platform's request
+# timeout via the in-app "fetch now" button. Shipping a working snapshot
+# means the site is usable immediately; the sidebar button still refreshes
+# it live whenever that's wanted.
+!data/holdings.db
 .pytest_cache/
 .DS_Store
