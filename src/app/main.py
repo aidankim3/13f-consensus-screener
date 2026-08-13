@@ -8,8 +8,19 @@ Run: streamlit run src/app/main.py
 """
 from __future__ import annotations
 
+import sys
 from datetime import date, datetime
 from pathlib import Path
+
+# `streamlit run src/app/main.py` (unlike `python -m streamlit run ...`)
+# puts this file's own directory on sys.path, not the repo root -- so the
+# `from src.xxx import yyy` absolute imports below would fail with
+# "ModuleNotFoundError: No module named 'src'" on any host that invokes
+# streamlit directly (seen in practice on Render). Fix it before those
+# imports run, regardless of how/where this script gets launched.
+_REPO_ROOT = Path(__file__).resolve().parent.parent.parent
+if str(_REPO_ROOT) not in sys.path:
+    sys.path.insert(0, str(_REPO_ROOT))
 
 import pandas as pd
 import streamlit as st
@@ -25,7 +36,7 @@ from src.edgar.storage import load_holdings_table, save_holdings_table
 from src.market.prices import get_current_prices, get_price_history, get_quarterly_avg_prices
 from src.market.ticker_map import resolve_tickers
 
-ROOT = Path(__file__).resolve().parent.parent.parent
+ROOT = _REPO_ROOT
 DB_PATH = ROOT / "data" / "holdings.db"
 MARKET_DB_PATH = ROOT / "data" / "market.db"
 USER_AGENT = "Aidan Kim aidankim3@gmail.com"
