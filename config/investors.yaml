@@ -10,49 +10,435 @@
 #      최근 filings.recent.form 목록이 실제로 13F-HR을 최근에 제출하는지로
 #      최종 CIK를 확정했다 (동명이인/구 등록 엔티티 배제).
 # 검증 스크립트: scripts/verify_investor_ciks.py
+#
+# 아래 "Dataroma 83 Superinvestors" 구간은 dataroma.com/m/home.php의 투자자 목록을
+# 기준으로, scripts/find_investor_ciks.py + scripts/retry_*.py로 일괄 조회·검증해
+# 추가했다 (2026-08-14). 각 항목의 dataroma_code로 원본과 대조 가능. Mohnish Pabrai
+# 1명은 활성 CIK를 찾지 못해 제외했다 (사유는 파일 맨 아래 주석 참고).
 investors:
   - name: "Warren Buffett"
     entity: "Berkshire Hathaway Inc"
     cik: "1067983"
-    # 확인: data.sec.gov/submissions name == "BERKSHIRE HATHAWAY INC"
 
   - name: "Bill Ackman"
     entity: "Pershing Square Capital Management, L.P."
     cik: "1336528"
-    # 확인: data.sec.gov/submissions name 일치, 최근 13F-HR 2026-05-15 제출
 
   - name: "Michael Burry"
     entity: "Scion Asset Management, LLC"
     cik: "1649339"
-    # 확인: data.sec.gov/submissions name 일치. 단, 최신 13F-HR이
-    # 2025-11-03 제출 / 2025-09-30 기준으로, 그 이후 분기(2025-12-31,
-    # 2026-03-31) 공시가 아직 없음 — build 단계에서 "최신 공시가 최근
-    # 분기가 아닐 수 있음"을 감안해야 함.
+    # 최신 13F-HR이 2025-11-03/2025-09-30 기준 — 그 이후 분기 공시가 아직 없을 수 있음
 
   - name: "Seth Klarman"
     entity: "Baupost Group LLC/MA"
     cik: "1061768"
-    # 확인: company search에서 "baupost" 검색 시 2개 후보 —
-    #   CIK 1061768 "BAUPOST GROUP LLC/MA"  (last-date 2026-08-06, 활성)
-    #   CIK 1054420 "BAUPOST GROUP LLC /ADV" (last-date 2010-11-17, 구 Form ADV 등록)
-    # 최근까지 활성 제출자인 1061768을 채택.
 
   - name: "David Tepper"
     entity: "Appaloosa LP"
     cik: "1656456"
-    # 확인: company search에서 "appaloosa" 검색 시 2개 후보 —
-    #   CIK 1656456 "Appaloosa LP"            (last-date 2026-05-15, 최근 13F-HR 2026-05-15/2026-02-17)
-    #   CIK 1006438 "APPALOOSA MANAGEMENT LP" (last-date 2016-07-22, 구 등록 엔티티)
-    # 최근까지 활성 제출자인 1656456을 채택.
 
   - name: "Terry Smith"
     entity: "Fundsmith LLP"
     cik: "1569205"
-    # 확인: company search에서 "fundsmith" 검색 시 4개 후보 —
-    #   CIK 1569205 "Fundsmith LLP"                    (런던 소재 운용사 본체, 최근 13F-HR 2026-05-15/2026-02-17)
-    #   CIK 1520023 "Fundsmith Equity Fund, L.P."      (개별 펀드 엔티티, 13F 신고 주체 아님)
-    #   CIK 1868537 "Fundsmith Investment Services Ltd." (모리셔스 소재 관계사)
-    #   CIK 1813932 "Fundsmith Long/Short Master Fund" (개별 펀드, last-date 2021 stale)
-    # 실제 13F를 제출하는 운용사(investment manager) 엔티티인 1569205를 채택 —
-    # 13F는 매니저가 재량권을 갖는 계좌 전체를 묶어 제출하므로 개별 펀드가 아닌
-    # 매니저 CIK로 추적해야 한다.
+
+  # --- Dataroma 83 Superinvestors (2026-08-14 기준 일괄 추가) ---
+
+  - name: "Wallace Weitz"
+    entity: "WEITZ INVESTMENT MANAGEMENT, INC."
+    cik: "0000883965"
+    # dataroma_code=WIM, 확인 시점 최근 13F 제출일=2026-08-12
+
+  - name: "Bryan Lawrence"
+    entity: "Oakcliff Capital Partners, LP"
+    cik: "0001657335"
+    # dataroma_code=OCL, 확인 시점 최근 13F 제출일=2026-08-13
+
+  - name: "Third Avenue Management"
+    entity: "THIRD AVENUE MANAGEMENT LLC"
+    cik: "0001099281"
+    # dataroma_code=TA, 확인 시점 최근 13F 제출일=2026-08-12
+
+  - name: "Harry Burn"
+    entity: "SOUND SHORE MANAGEMENT INC /CT/"
+    cik: "0000820124"
+    # dataroma_code=SSHFX, 확인 시점 최근 13F 제출일=2026-08-12
+
+  - name: "Francis Chou"
+    entity: "Chou Associates Management Inc."
+    cik: "0001389403"
+    # dataroma_code=ca, 확인 시점 최근 13F 제출일=2026-08-12
+
+  - name: "AKO Capital"
+    entity: "AKO CAPITAL LLP"
+    cik: "0001376879"
+    # dataroma_code=AKO, 확인 시점 최근 13F 제출일=2026-08-12
+
+  - name: "Yacktman Asset Management"
+    entity: "YACKTMAN ASSET MANAGEMENT LP"
+    cik: "0000905567"
+    # dataroma_code=YAM, 확인 시점 최근 13F 제출일=2026-08-11
+
+  - name: "Christopher Davis"
+    entity: "DAVIS SELECTED ADVISERS"
+    cik: "0001036325"
+    # dataroma_code=DAV, 확인 시점 최근 13F 제출일=2026-08-11
+
+  - name: "Vulcan Value Partners"
+    entity: "Vulcan Value Partners, LLC"
+    cik: "0001556785"
+    # dataroma_code=VVP, 확인 시점 최근 13F 제출일=2026-08-10
+
+  - name: "Tweedy Browne"
+    entity: "Tweedy, Browne Co LLC"
+    cik: "0000732905"
+    # dataroma_code=TB, 확인 시점 최근 13F 제출일=2026-08-07
+
+  - name: "Richard Pzena"
+    entity: "PZENA INVESTMENT MANAGEMENT LLC"
+    cik: "0001027796"
+    # dataroma_code=PIM, 확인 시점 최근 13F 제출일=2026-08-07
+
+  - name: "Jensen Investment Management"
+    entity: "JENSEN INVESTMENT MANAGEMENT INC"
+    cik: "0001106129"
+    # dataroma_code=JIM, 확인 시점 최근 13F 제출일=2026-08-07
+
+  - name: "Steven Check"
+    entity: "CHECK CAPITAL MANAGEMENT INC/CA"
+    cik: "0001032814"
+    # dataroma_code=CHE, 확인 시점 최근 13F 제출일=2026-08-05
+
+  - name: "First Eagle Investment Management"
+    entity: "First Eagle Investment Management, LLC"
+    cik: "0001325447"
+    # dataroma_code=FE, 확인 시점 최근 13F 제출일=2026-08-05
+
+  - name: "Polen Capital Management"
+    entity: "POLEN CAPITAL MANAGEMENT LLC"
+    cik: "0001034524"
+    # dataroma_code=pcm, 확인 시점 최근 13F 제출일=2026-08-04
+
+  - name: "Thomas Gayner"
+    entity: "MARKEL GROUP INC."
+    cik: "0001096343"
+    # dataroma_code=MKL, 확인 시점 최근 13F 제출일=2026-07-31
+
+  - name: "Torray Funds"
+    entity: "TORRAY INVESTMENT PARTNERS LLC"
+    cik: "0000098758"
+    # dataroma_code=T, 확인 시점 최근 13F 제출일=2026-07-30
+
+  - name: "William Von Mueffling"
+    entity: "CANTILLON CAPITAL MANAGEMENT LLC"
+    cik: "0001279936"
+    # dataroma_code=cc, 확인 시점 최근 13F 제출일=2026-07-29
+
+  - name: "Greenhaven Associates"
+    entity: "GREENHAVEN ASSOCIATES INC"
+    cik: "0000846222"
+    # dataroma_code=GA, 확인 시점 최근 13F 제출일=2026-07-28
+
+  - name: "John Armitage"
+    entity: "Egerton Capital (UK) LLP"
+    cik: "0001581811"
+    # dataroma_code=EC, 확인 시점 최근 13F 제출일=2026-07-21
+
+  - name: "David Katz"
+    entity: "MATRIX ASSET ADVISORS INC/NY"
+    cik: "0001016287"
+    # dataroma_code=MAVFX, 확인 시점 최근 13F 제출일=2026-07-15
+
+  - name: "Lindsell Train"
+    entity: "Lindsell Train Ltd"
+    cik: "0001484150"
+    # dataroma_code=LT, 확인 시점 최근 13F 제출일=2026-07-15
+
+  - name: "Guy Spier"
+    entity: "Aquamarine Capital Management, LLC"
+    cik: "0001404599"
+    # dataroma_code=aq, 확인 시점 최근 13F 제출일=2022-08-02
+    # 최근 3년+ 13F 미제출 — 자산이 100M 임계값 밑으로 내려갔거나 보고 의무가 없어졌을 가능성 (Dataroma엔 마지막 보유내역이 표시됨)
+
+  - name: "Howard Marks"
+    entity: "OAKTREE CAPITAL MANAGEMENT LP"
+    cik: "0000949509"
+    # dataroma_code=oc, 확인 시점 최근 13F 제출일=2026-05-20
+
+  - name: "Duan Yongping"
+    entity: "H&H International Investment, LLC"
+    cik: "0001759760"
+    # dataroma_code=HH, 확인 시점 최근 13F 제출일=2026-05-19
+
+  - name: "Abrams Bison Investments"
+    entity: "ABRAMS BISON INVESTMENTS, LLC"
+    cik: "0001317588"
+    # dataroma_code=ABI, 확인 시점 최근 13F 제출일=2026-05-15
+
+  - name: "Lee Ainslie"
+    entity: "MAVERICK CAPITAL LTD"
+    cik: "0000934639"
+    # dataroma_code=mc, 확인 시점 최근 13F 제출일=2026-05-15
+
+  - name: "Viking Global Investors"
+    entity: "VIKING GLOBAL INVESTORS LP"
+    cik: "0001103804"
+    # dataroma_code=vg, 확인 시점 최근 13F 제출일=2026-05-15
+
+  - name: "ValueAct Capital"
+    entity: "ValueAct Holdings, L.P."
+    cik: "0001418814"
+    # dataroma_code=VA, 확인 시점 최근 13F 제출일=2026-05-15
+    # 정정: 원래 매칭됐던 CIK 0001351069(ValueAct Capital Management, L.P.)는
+    # 2008-06-30 분기부터 지금까지 계속 13F-NT(보유내역 없는 공동제출 통지)만
+    # 제출 중이었음 — 실제 13F-HR은 CIK 1418814(ValueAct Holdings, L.P.)가
+    # 제출. list_13f_filings()는 13F-NT를 걸러내므로 원래 CIK로는 2008년
+    # 이전 데이터만 잡혀서 build 단계에서 전부 실패했음 (구버전 텍스트 형식).
+
+  - name: "Li Lu"
+    entity: "Himalaya Capital Management LLC"
+    cik: "0001709323"
+    # dataroma_code=HC, 확인 시점 최근 13F 제출일=2026-05-15
+
+  - name: "David Einhorn"
+    entity: "GREENLIGHT CAPITAL INC"
+    cik: "0001079114"
+    # dataroma_code=GLRE, 확인 시점 최근 13F 제출일=2024-02-14
+    # 최근 2년+ 13F 미제출 — Dataroma엔 마지막 보유내역이 표시됨
+
+  - name: "Carl Icahn"
+    entity: "ICAHN CARL C"
+    cik: "0000921669"
+    # dataroma_code=ic, 확인 시점 최근 13F 제출일=2026-05-15
+    # 정정: 원래 매칭됐던 CIK 0001412093(ICAHN CAPITAL LP)는 13F-NT(보유내역
+    # 없는 공동제출 통지)만 제출하는 엔티티였음 — 실제 13F-HR은 CIK
+    # 921669(ICAHN CARL C)가 제출. Trian(Nelson Peltz)에서 발견한 것과 같은
+    # 함정: 같은 그룹 내에서 한 CIK는 13F-NT만, 다른 CIK가 실제 13F-HR을
+    # 제출하는 경우가 있어 last_13f 날짜만 보면 구분이 안 됨.
+    # 동명 후보 다수(ICAHN CARL C, ICAHN CAPITAL MANAGEMENT LP 등) 중 최근 활성 제출자로 확정
+
+  - name: "Bruce Berkowitz"
+    entity: "FAIRHOLME CAPITAL MANAGEMENT LLC"
+    cik: "0001056831"
+    # dataroma_code=fairx, 확인 시점 최근 13F 제출일=2026-05-15
+
+  - name: "Bill Nygren"
+    entity: "HARRIS ASSOCIATES L P"
+    cik: "0000813917"
+    # dataroma_code=HA, 확인 시점 최근 13F 제출일=2026-05-15
+    # Oakmark 펀드의 실제 운용사는 Harris Associates
+
+  - name: "Bill & Melinda Gates Foundation Trust"
+    entity: "GATES FOUNDATION TRUST"
+    cik: "0001166559"
+    # dataroma_code=GFT, 확인 시점 최근 13F 제출일=2026-05-15
+
+  - name: "Norbert Lou"
+    entity: "Punch Card Management L.P."
+    cik: "0001631664"
+    # dataroma_code=PC, 확인 시점 최근 13F 제출일=2026-05-15
+
+  - name: "Henry Ellenbogen"
+    entity: "Durable Capital Partners LP"
+    cik: "0001798849"
+    # dataroma_code=DCP, 확인 시점 최근 13F 제출일=2026-05-15
+
+  - name: "Christopher Bloomstran"
+    entity: "SEMPER AUGUSTUS INVESTMENTS GROUP LLC"
+    cik: "0001115373"
+    # dataroma_code=SA, 확인 시점 최근 13F 제출일=2026-05-15
+
+  - name: "Mason Hawkins"
+    entity: "SOUTHEASTERN ASSET MANAGEMENT INC/TN/"
+    cik: "0000807985"
+    # dataroma_code=SE, 확인 시점 최근 13F 제출일=2026-05-15
+
+  - name: "Glenn Greenberg"
+    entity: "Brave Warrior Advisors, LLC"
+    cik: "0001553733"
+    # dataroma_code=CCM, 확인 시점 최근 13F 제출일=2026-05-15
+
+  - name: "Daniel Loeb"
+    entity: "Third Point LLC"
+    cik: "0001040273"
+    # dataroma_code=tp, 확인 시점 최근 13F 제출일=2026-05-15
+
+  - name: "Stephen Mandel"
+    entity: "LONE PINE CAPITAL LLC"
+    cik: "0001061165"
+    # dataroma_code=LPC, 확인 시점 최근 13F 제출일=2026-05-15
+
+  - name: "Alex Roepers"
+    entity: "ATLANTIC INVESTMENT MANAGEMENT, INC."
+    cik: "0001063296"
+    # dataroma_code=AIM, 확인 시점 최근 13F 제출일=2026-05-15
+
+  - name: "Valley Forge Capital Management"
+    entity: "Valley Forge Capital Management, LP"
+    cik: "0001697868"
+    # dataroma_code=VFC, 확인 시점 최근 13F 제출일=2026-05-15
+
+  - name: "David Rolfe"
+    entity: "WEDGEWOOD PARTNERS INC"
+    cik: "0000859804"
+    # dataroma_code=WP, 확인 시점 최근 13F 제출일=2026-05-15
+
+  - name: "Chase Coleman"
+    entity: "TIGER GLOBAL MANAGEMENT LLC"
+    cik: "0001167483"
+    # dataroma_code=TGM, 확인 시점 최근 13F 제출일=2026-05-15
+
+  - name: "Glenn Welling"
+    entity: "Engaged Capital LLC"
+    cik: "0001559771"
+    # dataroma_code=ENG, 확인 시점 최근 13F 제출일=2026-05-15
+
+  - name: "Clifford Sosin"
+    entity: "CAS Investment Partners, LLC"
+    cik: "0001697591"
+    # dataroma_code=CAS, 확인 시점 최근 13F 제출일=2026-05-15
+
+  - name: "AltaRock Partners"
+    entity: "ALTAROCK PARTNERS LP"
+    cik: "0001631014"
+    # dataroma_code=AP, 확인 시점 최근 13F 제출일=2026-05-15
+
+  - name: "Francois Rochon"
+    entity: "Giverny Capital Inc."
+    cik: "0001641864"
+    # dataroma_code=GC, 확인 시점 최근 13F 제출일=2026-05-15
+
+  - name: "Leon Cooperman"
+    entity: "Omega Advisors Inc."
+    cik: "0000898202"
+    # dataroma_code=oa, 확인 시점 최근 13F 제출일=2019-02-14
+    # 2018년경 패밀리오피스로 전환, 최근 13F 미제출 — Dataroma엔 마지막 보유내역이 표시됨
+
+  - name: "Arnold Van Den Berg"
+    entity: "VAN DEN BERG MANAGEMENT I, INC"
+    cik: "0001142062"
+    # dataroma_code=VAN, 확인 시점 최근 13F 제출일=2026-05-15
+
+  - name: "Bill Miller"
+    entity: "MILLER VALUE PARTNERS, LLC"
+    cik: "0001135778"
+    # dataroma_code=LMM, 확인 시점 최근 13F 제출일=2026-05-15
+
+  - name: "Pat Dorsey"
+    entity: "Dorsey Asset Management, LLC"
+    cik: "0001671657"
+    # dataroma_code=DA, 확인 시점 최근 13F 제출일=2026-05-15
+
+  - name: "Chris Hohn"
+    entity: "TCI Fund Management Ltd"
+    cik: "0001647251"
+    # dataroma_code=tci, 확인 시점 최근 13F 제출일=2026-05-15
+
+  - name: "Prem Watsa"
+    entity: "FAIRFAX FINANCIAL HOLDINGS LTD/ CAN"
+    cik: "0000915191"
+    # dataroma_code=FFH, 확인 시점 최근 13F 제출일=2026-05-15
+
+  - name: "Hillman Capital Management"
+    entity: "Hillman Capital Management, Inc."
+    cik: "0001314620"
+    # dataroma_code=HCM, 확인 시점 최근 13F 제출일=2026-05-15
+
+  - name: "Triple Frond Partners"
+    entity: "Triple Frond Partners LLC"
+    cik: "0001454502"
+    # dataroma_code=TFP, 확인 시점 최근 13F 제출일=2026-05-15
+
+  - name: "Tom Bancroft"
+    entity: "Makaira Partners LLC"
+    cik: "0001540866"
+    # dataroma_code=MP, 확인 시점 최근 13F 제출일=2026-05-15
+
+  - name: "Ruane Cunniff LP"
+    entity: "RUANE, CUNNIFF & GOLDFARB INC"
+    cik: "0000728014"
+    # dataroma_code=RC, 확인 시점 최근 13F 제출일=2018-05-15
+    # 2019년 규제 이슈 이후 최근 13F 미제출로 보임 — Dataroma엔 마지막 보유내역이 표시됨
+
+  - name: "Greg Alexander"
+    entity: "Conifer Management, L.L.C."
+    cik: "0001773994"
+    # dataroma_code=CM, 확인 시점 최근 13F 제출일=2026-05-15
+
+  - name: "John Rogers"
+    entity: "ARIEL INVESTMENTS, LLC"
+    cik: "0000936753"
+    # dataroma_code=AI, 확인 시점 최근 13F 제출일=2026-05-14
+
+  - name: "David Abrams"
+    entity: "ABRAMS CAPITAL MANAGEMENT, L.P."
+    cik: "0001358706"
+    # dataroma_code=abc, 확인 시점 최근 13F 제출일=2026-05-14
+
+  - name: "Chuck Akre"
+    entity: "AKRE CAPITAL MANAGEMENT LLC"
+    cik: "0001112520"
+    # dataroma_code=AC, 확인 시점 최근 13F 제출일=2026-05-14
+
+  - name: "Dennis Hong"
+    entity: "ShawSpring Partners LLC"
+    cik: "0001766908"
+    # dataroma_code=SP, 확인 시점 최근 13F 제출일=2026-05-14
+
+  - name: "Sarah Ketterer"
+    entity: "CAUSEWAY CAPITAL MANAGEMENT LLC"
+    cik: "0001165797"
+    # dataroma_code=CAU, 확인 시점 최근 13F 제출일=2026-05-14
+
+  - name: "Dodge & Cox Funds"
+    entity: "DODGE & COX"
+    cik: "0000200217"
+    # dataroma_code=DAC, 확인 시점 최근 13F 제출일=2026-05-14
+
+  - name: "Samantha McLemore"
+    entity: "Patient Capital Management, LLC"
+    cik: "0001854794"
+    # dataroma_code=PTNT, 확인 시점 최근 13F 제출일=2026-05-14
+
+  - name: "First Pacific Advisors"
+    entity: "First Pacific Advisors, LP"
+    cik: "0001377581"
+    # dataroma_code=FPA, 확인 시점 최근 13F 제출일=2026-05-14
+
+  - name: "Mairs & Power Funds"
+    entity: "MAIRS & POWER INC"
+    cik: "0001070134"
+    # dataroma_code=MPF, 확인 시점 최근 13F 제출일=2026-05-14
+
+  - name: "Thomas Russo"
+    entity: "GARDNER RUSSO & QUINN LLC"
+    cik: "0000860643"
+    # dataroma_code=GR, 확인 시점 최근 13F 제출일=2026-05-13
+
+  - name: "Robert Vinall"
+    entity: "RV Capital AG"
+    cik: "0001766596"
+    # dataroma_code=RVC, 확인 시점 최근 13F 제출일=2026-05-11
+
+  - name: "Josh Tarasoff"
+    entity: "GREENLEA LANE CAPITAL MANAGEMENT, LLC"
+    cik: "0001766504"
+    # dataroma_code=GLC, 확인 시점 최근 13F 제출일=2026-05-11
+
+  - name: "Kahn Brothers Group"
+    entity: "KAHN BROTHERS GROUP INC"
+    cik: "0001039565"
+    # dataroma_code=KB, 확인 시점 최근 13F 제출일=2026-05-08
+
+  - name: "Muhlenkamp"
+    entity: "MUHLENKAMP & CO INC"
+    cik: "0001133219"
+    # dataroma_code=MUHL, 확인 시점 최근 13F 제출일=2026-05-06
+
+  - name: "Nelson Peltz"
+    entity: "TRIAN FUND MANAGEMENT, L.P."
+    cik: "0001345471"
+    # dataroma_code=TF, 확인 시점 최근 13F 제출일=2026-08-12
+    # 동일명 CIK 1345472(Trian Fund Management GP, LLC)는 13F-NT(보유내역 없는 통지)만 제출 — 실제 보유내역이 있는 이 CIK로 확정
+
+  # --- 제외된 항목 ---
+  # Mohnish Pabrai (Pabrai Investments (PI)): 개인 CIK(1173334, PABRAI MOHNISH)는 2012년 이후 13F-HR 미제출. Pabrai Investment Fund 2/3/IV 등 개별 펀드 CIK는 Form D/13G만 제출하고 13F-HR 제출 주체가 아님. Dataroma는 2026-06-30 기준 데이터를 보유 중이라 실제 활성 필러가 있을 텐데, EDGAR company search로 찾지 못함 — 추가 조사 필요

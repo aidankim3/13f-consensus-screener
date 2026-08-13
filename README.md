@@ -170,7 +170,7 @@ tests/       # 파싱·집계 단위테스트
     보유/반대매매 표 4개, 그리고 전체 투자자 쌍 자카드 히트맵
     (`pandas.Styler.background_gradient` — matplotlib 필요)
 
-### 6단계 (마지막) — 신규 공시 알림 + 정직한 백테스트
+### 6단계 — 신규 공시 알림 + 정직한 백테스트
 
 - `src/edgar/client.py`
   - `list_13f_filings()`을 일반화한 `list_filings(submissions, form_types)` 추가
@@ -237,6 +237,40 @@ tests/       # 파싱·집계 단위테스트
 반올림 표시하는 차이만 있음). AMEX의 경우 원본 SEC XML에 3개 자회사
 계좌로 분할 신고된 주식수(1,149,942 + 149,061,045 + 1,399,713)의 합이
 Dataroma가 보여주는 151,610,700주와 정확히 일치함도 직접 확인했다.
+
+### 7단계 — 투자자 82명으로 확장 + 빌드 견고성
+
+- `config/investors.yaml`: [Dataroma](https://www.dataroma.com/m/home.php)의
+  "83 Superinvestors" 목록을 기준으로 6명 → 82명으로 확장 (1명 Mohnish
+  Pabrai는 활성 SEC CIK를 못 찾아 제외 — 사유는 파일 내 주석 참고)
+  - `scripts/find_investor_ciks.py`: 이름 목록을 받아 EDGAR company search +
+    최근 13F-HR 제출 이력으로 후보를 스코어링해 CIK를 일괄 추정. 확신도가
+    낮은 건 `scripts/retry_needs_review.py`로 검색어를 바꿔 재시도. 82명 중
+    59명은 자동으로 고신뢰도 매칭, 나머지는 재시도·수동 확인 후 확정
+    (이름만 보고 확정하지 않는다는 원칙은 그대로 유지 — 자동화는 "후보를
+    빨리 찾는" 용도이지 "검증을 생략하는" 용도가 아님)
+  - **실제로 두 번 발견한 함정 — 13F-NT(통지)와 13F-HR(실제 보유내역) 혼동**:
+    Nelson Peltz/Trian과 Carl Icahn 둘 다, 그룹 내 한 CIK(Trian Fund
+    Management GP, LLC / Icahn Capital LP)는 "실제 보유내역은 다른 계열사가
+    제출함"이라는 **13F-NT만 제출**하고, 진짜 데이터가 있는 건 같은 그룹의
+    다른 CIK(Trian Fund Management, L.P. / Icahn Carl C)였다. `form.startswith
+    ("13F")`로만 걸러내면 이 둘을 구분 못 해 스코어링 단계에서 잘못된 CIK를
+    고를 뻔했다 — `list_13f_filings()`는 원래 `{"13F-HR","13F-HR/A"}`만
+    걸러내 정상 동작했지만, 매칭 스크립트의 확신도 판단 로직(`latest_13f_date`)
+    은 이 구분을 안 하고 있어 수정함. ValueAct Capital도 비슷한 사례로,
+    처음 매칭된 CIK(ValueAct Capital Management, L.P.)가 2008년부터 계속
+    13F-NT만 내고 있어서 실제 데이터는 ValueAct Holdings, L.P.에 있었다 —
+    build 단계에서 해당 투자자 데이터가 0건인 것을 보고 발견해 수정함
+  - **빌드 견고성 개선**: 82명 규모로 처음 돌렸을 때 ValueAct의 2008년 이전
+    구버전 텍스트 형식 공시(XML information table이 없는 형식)에서
+    `build_all()`이 예외를 던지며 전체가 죽었고, 그때까지 받은 나머지 81명
+    데이터도 저장 안 된 채 날아갈 뻔했다. 분기 단위로 try/except를 둘러싸
+    한 분기(또는 한 투자자)가 실패해도 나머지는 계속 진행하도록
+    `src/edgar/build.py`를 고쳤다 — 82명 규모에서는 이런 개별 이상 데이터가
+    나오는 게 오히려 정상이라, 전체를 멈추기보다 로그로 남기고 넘어가는
+    쪽이 맞다
+- 결과: 82명 전원 데이터 확보(총 42,334행), 컨센서스 1위가 Alphabet
+  Class A(82명 중 39명, 47.6%가 보유) — 상식적인 결과로 실사용 검증 완료
 
 ## 실행 순서
 

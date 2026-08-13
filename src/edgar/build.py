@@ -52,6 +52,74 @@ def load_investors(config_path: Path = CONFIG_PATH) -> list[dict]:
     return yaml.safe_load(config_path.read_text(encoding="utf-8"))["investors"]
 
 
+def _process_one_filing(
+    client: EdgarClient,
+    inv: dict,
+    filing: dict,
+    all_filings: list[dict],
+    cache_dir: Path,
+) -> pd.DataFrame:
+    """Fetch + parse a single resolved filing into a holdings frame
+    (without period_rank attached -- the caller adds that)."""
+    docs = fetch_filing_documents(
+        client, inv["cik"], filing["accessionNumber"], filing["primaryDocument"], cache_dir
+    )
+
+    if not is_partial_amendment(docs.cover_page_xml):
+        return build_holdings_frame(
+            information_table_xml=docs.information_table_xml,
+            cover_page_xml=docs.cover_page_xml,
+            cik=inv["cik"],
+            manager_name=inv["name"],
+            period_date=filing["reportDate"],
+            filing_date=filing["filingDate"],
+        )
+
+    # A "NEW HOLDINGS" amendment only adds previously-confidential
+    # positions -- it is NOT a full restatement. Using it alone would
+    # silently undercount the quarter (seen for real: Berkshire's
+    # 2025-03-31 13F-HR/A had 4 rows vs ~114 in the original). Merge with
+    # the original 13F-HR for the same period instead.
+    original = find_original_filing(all_filings, filing["reportDate"])
+    if not original or original["accessionNumber"] == filing["accessionNumber"]:
+        logger.warning(
+            "%s: %s (period %s) looks like a partial NEW-HOLDINGS amendment but no "
+            "original 13F-HR was found -- using it as-is (may undercount)",
+            inv["name"], filing["accessionNumber"], filing["reportDate"],
+        )
+        return build_holdings_frame(
+            information_table_xml=docs.information_table_xml,
+            cover_page_xml=docs.cover_page_xml,
+            cik=inv["cik"],
+            manager_name=inv["name"],
+            period_date=filing["reportDate"],
+            filing_date=filing["filingDate"],
+        )
+
+    logger.warning(
+        "%s: %s (period %s) is a NEW-HOLDINGS amendment -- merging with original 13F-HR "
+        "(accession %s) to avoid undercounting",
+        inv["name"], filing["accessionNumber"], filing["reportDate"], original["accessionNumber"],
+    )
+    original_docs = fetch_filing_documents(
+        client, inv["cik"], original["accessionNumber"], original["primaryDocument"], cache_dir
+    )
+    raw = combine_raw_tables(
+        parse_information_table(original_docs.information_table_xml),
+        parse_information_table(docs.information_table_xml),
+    )
+    return build_holdings_frame_from_raw(
+        raw,
+        cover_page_xml=original_docs.cover_page_xml,
+        cik=inv["cik"],
+        manager_name=inv["name"],
+        period_date=filing["reportDate"],
+        # the amendment's date: when the FULL picture (original +
+        # newly-disclosed) first became public
+        filing_date=filing["filingDate"],
+    )
+
+
 def build_all(
     investors: list[dict],
     client: EdgarClient,
@@ -60,13 +128,25 @@ def build_all(
 ) -> pd.DataFrame:
     """Fetch + parse each investor's latest `n_quarters` 13F filings into
     one combined holdings frame, tagged with period_rank (0 = most
-    recent). Investors with no 13F filings on record are skipped with a
-    warning rather than failing the whole run.
+    recent).
+
+    Failures are isolated as tightly as possible so one bad filing never
+    takes down the whole run (important at 80+ investors -- something
+    will eventually be malformed, e.g. a pre-XML-era filing with no
+    machine-readable information table): a quarter that fails to fetch/
+    parse is skipped (that investor keeps its other quarters), and an
+    investor whose submissions/filing-list lookup itself fails is skipped
+    entirely -- both logged as warnings/errors, not raised.
     """
     frames = []
     for inv in investors:
-        submissions = client.get_submissions(inv["cik"])
-        filings = list_13f_filings(submissions)
+        try:
+            submissions = client.get_submissions(inv["cik"])
+            filings = list_13f_filings(submissions)
+        except Exception as exc:
+            logger.error("%s (CIK %s): failed to list filings: %s -- skipping", inv["name"], inv["cik"], exc)
+            continue
+
         if not filings:
             logger.warning("no 13F filings found for %s (CIK %s)", inv["name"], inv["cik"])
             continue
@@ -75,80 +155,18 @@ def build_all(
         if len(latest_filings) < n_quarters:
             logger.warning(
                 "%s (CIK %s): only %d/%d quarters of history available",
-                inv["name"],
-                inv["cik"],
-                len(latest_filings),
-                n_quarters,
+                inv["name"], inv["cik"], len(latest_filings), n_quarters,
             )
 
         for period_rank, filing in enumerate(latest_filings):
-            docs = fetch_filing_documents(
-                client, inv["cik"], filing["accessionNumber"], filing["primaryDocument"], cache_dir
-            )
-
-            if is_partial_amendment(docs.cover_page_xml):
-                # A "NEW HOLDINGS" amendment only adds previously-
-                # confidential positions -- it is NOT a full restatement.
-                # Using it alone would silently undercount the quarter
-                # (seen for real: Berkshire's 2025-03-31 13F-HR/A had 4
-                # rows vs ~114 in the original). Merge with the original
-                # 13F-HR for the same period instead.
-                original = find_original_filing(filings, filing["reportDate"])
-                if original and original["accessionNumber"] != filing["accessionNumber"]:
-                    logger.warning(
-                        "%s: %s (period %s) is a NEW-HOLDINGS amendment -- merging with "
-                        "original 13F-HR (accession %s) to avoid undercounting",
-                        inv["name"],
-                        filing["accessionNumber"],
-                        filing["reportDate"],
-                        original["accessionNumber"],
-                    )
-                    original_docs = fetch_filing_documents(
-                        client,
-                        inv["cik"],
-                        original["accessionNumber"],
-                        original["primaryDocument"],
-                        cache_dir,
-                    )
-                    raw = combine_raw_tables(
-                        parse_information_table(original_docs.information_table_xml),
-                        parse_information_table(docs.information_table_xml),
-                    )
-                    holdings = build_holdings_frame_from_raw(
-                        raw,
-                        cover_page_xml=original_docs.cover_page_xml,
-                        cik=inv["cik"],
-                        manager_name=inv["name"],
-                        period_date=filing["reportDate"],
-                        # the amendment's date: when the FULL picture
-                        # (original + newly-disclosed) first became public
-                        filing_date=filing["filingDate"],
-                    )
-                else:
-                    logger.warning(
-                        "%s: %s (period %s) looks like a partial NEW-HOLDINGS amendment but "
-                        "no original 13F-HR was found -- using it as-is (may undercount)",
-                        inv["name"],
-                        filing["accessionNumber"],
-                        filing["reportDate"],
-                    )
-                    holdings = build_holdings_frame(
-                        information_table_xml=docs.information_table_xml,
-                        cover_page_xml=docs.cover_page_xml,
-                        cik=inv["cik"],
-                        manager_name=inv["name"],
-                        period_date=filing["reportDate"],
-                        filing_date=filing["filingDate"],
-                    )
-            else:
-                holdings = build_holdings_frame(
-                    information_table_xml=docs.information_table_xml,
-                    cover_page_xml=docs.cover_page_xml,
-                    cik=inv["cik"],
-                    manager_name=inv["name"],
-                    period_date=filing["reportDate"],
-                    filing_date=filing["filingDate"],
+            try:
+                holdings = _process_one_filing(client, inv, filing, filings, cache_dir)
+            except Exception as exc:
+                logger.error(
+                    "%s: failed to process %s (period_rank=%d, period %s): %s -- skipping this quarter",
+                    inv["name"], filing["accessionNumber"], period_rank, filing["reportDate"], exc,
                 )
+                continue
 
             holdings["period_rank"] = period_rank
             frames.append(holdings)
