@@ -43,6 +43,23 @@ USER_AGENT = "Aidan Kim aidankim3@gmail.com"
 
 st.set_page_config(page_title="13F 컨센서스 스크리너", layout="wide")
 
+# TEMP DIAGNOSTIC: print what this process actually sees on disk, so a
+# "wrong data showing on the deployed site" report can be root-caused
+# from server logs instead of guessed at. Remove once resolved.
+print(f"[DIAG] __file__={__file__}", flush=True)
+print(f"[DIAG] REPO_ROOT={_REPO_ROOT}", flush=True)
+print(f"[DIAG] DB_PATH={DB_PATH} exists={DB_PATH.exists()}", flush=True)
+if DB_PATH.exists():
+    print(f"[DIAG] DB_PATH size={DB_PATH.stat().st_size} mtime={DB_PATH.stat().st_mtime}", flush=True)
+    try:
+        import sqlite3
+        _conn = sqlite3.connect(str(DB_PATH))
+        _n = _conn.execute("SELECT COUNT(DISTINCT manager_name) FROM holdings").fetchone()[0]
+        print(f"[DIAG] distinct manager_name count in holdings table={_n}", flush=True)
+        _conn.close()
+    except Exception as _exc:
+        print(f"[DIAG] failed to query DB_PATH: {_exc}", flush=True)
+
 
 @st.cache_data(ttl=300)
 def _load_holdings(db_path: str) -> pd.DataFrame:
