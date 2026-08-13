@@ -1,0 +1,58 @@
+# 13F 컨센서스 스크리너 - 추적할 투자자 목록
+#
+# cik는 SEC EDGAR의 Central Index Key (10자리, 앞자리 0 포함 여부는 무관 —
+# 코드에서 normalize_cik()로 10자리 zero-pad 정규화함).
+#
+# 각 CIK는 실제 조회로 확인했다 (이름만 보고 추측해 넣지 않음):
+#   1) https://www.sec.gov/cgi-bin/browse-edgar?action=getcompany&company=<이름>&type=13F-HR&output=atom
+#      로 후보 CIK들을 찾고,
+#   2) https://data.sec.gov/submissions/CIK##########.json 의 "name" 필드와
+#      최근 filings.recent.form 목록이 실제로 13F-HR을 최근에 제출하는지로
+#      최종 CIK를 확정했다 (동명이인/구 등록 엔티티 배제).
+# 검증 스크립트: scripts/verify_investor_ciks.py
+investors:
+  - name: "Warren Buffett"
+    entity: "Berkshire Hathaway Inc"
+    cik: "1067983"
+    # 확인: data.sec.gov/submissions name == "BERKSHIRE HATHAWAY INC"
+
+  - name: "Bill Ackman"
+    entity: "Pershing Square Capital Management, L.P."
+    cik: "1336528"
+    # 확인: data.sec.gov/submissions name 일치, 최근 13F-HR 2026-05-15 제출
+
+  - name: "Michael Burry"
+    entity: "Scion Asset Management, LLC"
+    cik: "1649339"
+    # 확인: data.sec.gov/submissions name 일치. 단, 최신 13F-HR이
+    # 2025-11-03 제출 / 2025-09-30 기준으로, 그 이후 분기(2025-12-31,
+    # 2026-03-31) 공시가 아직 없음 — build 단계에서 "최신 공시가 최근
+    # 분기가 아닐 수 있음"을 감안해야 함.
+
+  - name: "Seth Klarman"
+    entity: "Baupost Group LLC/MA"
+    cik: "1061768"
+    # 확인: company search에서 "baupost" 검색 시 2개 후보 —
+    #   CIK 1061768 "BAUPOST GROUP LLC/MA"  (last-date 2026-08-06, 활성)
+    #   CIK 1054420 "BAUPOST GROUP LLC /ADV" (last-date 2010-11-17, 구 Form ADV 등록)
+    # 최근까지 활성 제출자인 1061768을 채택.
+
+  - name: "David Tepper"
+    entity: "Appaloosa LP"
+    cik: "1656456"
+    # 확인: company search에서 "appaloosa" 검색 시 2개 후보 —
+    #   CIK 1656456 "Appaloosa LP"            (last-date 2026-05-15, 최근 13F-HR 2026-05-15/2026-02-17)
+    #   CIK 1006438 "APPALOOSA MANAGEMENT LP" (last-date 2016-07-22, 구 등록 엔티티)
+    # 최근까지 활성 제출자인 1656456을 채택.
+
+  - name: "Terry Smith"
+    entity: "Fundsmith LLP"
+    cik: "1569205"
+    # 확인: company search에서 "fundsmith" 검색 시 4개 후보 —
+    #   CIK 1569205 "Fundsmith LLP"                    (런던 소재 운용사 본체, 최근 13F-HR 2026-05-15/2026-02-17)
+    #   CIK 1520023 "Fundsmith Equity Fund, L.P."      (개별 펀드 엔티티, 13F 신고 주체 아님)
+    #   CIK 1868537 "Fundsmith Investment Services Ltd." (모리셔스 소재 관계사)
+    #   CIK 1813932 "Fundsmith Long/Short Master Fund" (개별 펀드, last-date 2021 stale)
+    # 실제 13F를 제출하는 운용사(investment manager) 엔티티인 1569205를 채택 —
+    # 13F는 매니저가 재량권을 갖는 계좌 전체를 묶어 제출하므로 개별 펀드가 아닌
+    # 매니저 CIK로 추적해야 한다.
