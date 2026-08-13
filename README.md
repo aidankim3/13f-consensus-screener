@@ -291,6 +291,26 @@ py -m venv .venv
 # 설정하지 않으면 이메일 없이 콘솔/파일 로그만 남는다 (기본값).
 ```
 
+## 배포 (Streamlit Community Cloud)
+
+GitHub: https://github.com/aidankim3/13f-consensus-screener
+
+data/holdings.db 같은 로컬 캐시는 `.gitignore`로 제외되어 저장소에 없다 —
+배포된 인스턴스는 처음 열릴 때 (또는 사이드바 "데이터 관리"에서 언제든)
+"지금 EDGAR에서 데이터 가져오기" 버튼으로 직접 SEC EDGAR/OpenFIGI/Yahoo
+Finance에서 데이터를 받아 스스로 초기화한다 (`src/app/main.py`의
+`_build_data_inline()`이 `src/edgar/build.py`의 파이프라인을 그대로 재사용).
+
+1. https://share.streamlit.io 에서 GitHub 계정으로 로그인
+2. "Create app" → 저장소 `aidankim3/13f-consensus-screener`, 브랜치 `main`,
+   Main file path `src/app/main.py` 선택 후 "Deploy"
+3. 배포된 사이트에서 최초 1회 "지금 EDGAR에서 데이터 가져오기" 버튼 클릭
+   (1~2분 소요)
+
+`src/jobs/refresh.py`(신규 공시 알림 잡)는 Streamlit Community Cloud가
+지속적인 백그라운드 크론을 지원하지 않으므로 별도 서버나 로컬 스케줄러
+(작업 스케줄러/cron)에서 돌려야 한다 — 위 "실행 순서" 참고.
+
 ## SEC EDGAR 사용 시 규칙 (반드시 준수)
 
 - 모든 요청에 `이름 이메일` 형식의 User-Agent 필수 (`build_headers()`가 강제).
