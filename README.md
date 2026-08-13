@@ -291,7 +291,11 @@ py -m venv .venv
 # 설정하지 않으면 이메일 없이 콘솔/파일 로그만 남는다 (기본값).
 ```
 
-## 배포 (Streamlit Community Cloud)
+## 배포
+
+**실제 배포된 사이트**: https://one3f-consensus-screener.onrender.com
+(Render.com 무료 티어 — 일정 시간 요청이 없으면 슬립 상태가 되고, 다음
+접속 시 깨어나는 데 30~60초 정도 걸릴 수 있다)
 
 GitHub: https://github.com/aidankim3/13f-consensus-screener
 
@@ -300,6 +304,18 @@ data/holdings.db 같은 로컬 캐시는 `.gitignore`로 제외되어 저장소�
 "지금 EDGAR에서 데이터 가져오기" 버튼으로 직접 SEC EDGAR/OpenFIGI/Yahoo
 Finance에서 데이터를 받아 스스로 초기화한다 (`src/app/main.py`의
 `_build_data_inline()`이 `src/edgar/build.py`의 파이프라인을 그대로 재사용).
+
+### Render.com (현재 사용 중)
+
+Render API로 생성한 웹 서비스 설정:
+- Runtime: Python, Region: Oregon, Plan: Free
+- Build command: `pip install -r requirements.txt`
+- Start command: `streamlit run src/app/main.py --server.port $PORT --server.address 0.0.0.0`
+- `main` 브랜치에 푸시하면 자동 재배포(`autoDeploy: yes`)
+
+관리 대시보드: https://dashboard.render.com/web/srv-d9utfinqj5pc738fk63g
+
+### Streamlit Community Cloud (대안, 무료·슬립 없음)
 
 1. https://share.streamlit.io 에서 GitHub 계정으로 로그인
 2. "Create app" → 저장소 `aidankim3/13f-consensus-screener`, 브랜치 `main`,
