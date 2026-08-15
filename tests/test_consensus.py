@@ -2,7 +2,10 @@ import pandas as pd
 import pytest
 
 from src.analytics.consensus import (
+    activity_summary,
     consensus_holdings,
+    consensus_trend,
+    holders_of_cusip,
     quarter_changes,
     top_buys,
     top_sells,
@@ -100,6 +103,106 @@ class TestConsensusHoldings:
         # B's total portfolio is only stock X too -> 100% weight. Mean = 100%,
         # not skewed by A appearing 3 times.
         assert result.loc["X", "avg_weight_pct"] == pytest.approx(100.0)
+
+
+class TestHoldersOfCusip:
+    @pytest.fixture
+    def holdings(self) -> pd.DataFrame:
+        # X: A holds 60/100=60%, B holds 150/200=75%
+        rows = [
+            _holding("A", "Manager A", "X", "Stock X", 60),
+            _holding("A", "Manager A", "Y", "Stock Y", 40),
+            _holding("B", "Manager B", "X", "Stock X", 150),
+            _holding("B", "Manager B", "Z", "Stock Z", 50),
+            _holding("C", "Manager C", "Y", "Stock Y", 50),
+        ]
+        return pd.DataFrame(rows)
+
+    def test_columns(self, holdings):
+        result = holders_of_cusip(holdings, "X")
+        assert list(result.columns) == ["manager_name", "shares", "value_usd", "weight_pct"]
+
+    def test_only_holders_of_the_given_cusip(self, holdings):
+        result = holders_of_cusip(holdings, "X")
+        assert set(result["manager_name"]) == {"Manager A", "Manager B"}
+
+    def test_weight_pct_is_within_each_manager_own_portfolio(self, holdings):
+        result = holders_of_cusip(holdings, "X").set_index("manager_name")
+        assert result.loc["Manager A", "weight_pct"] == pytest.approx(60.0)
+        assert result.loc["Manager B", "weight_pct"] == pytest.approx(75.0)
+
+    def test_sorted_by_value_descending(self, holdings):
+        result = holders_of_cusip(holdings, "X")
+        assert list(result["manager_name"]) == ["Manager B", "Manager A"]
+
+    def test_no_holders_returns_empty(self, holdings):
+        result = holders_of_cusip(holdings, "NONEXISTENT")
+        assert result.empty
+        assert list(result.columns) == ["manager_name", "shares", "value_usd", "weight_pct"]
+
+    def test_empty_input_returns_empty_with_columns(self):
+        result = holders_of_cusip(pd.DataFrame(columns=["cik", "cusip", "name_of_issuer", "value_usd"]), "X")
+        assert result.empty
+        assert list(result.columns) == ["manager_name", "shares", "value_usd", "weight_pct"]
+
+    def test_split_sub_account_rows_consolidate_to_one_holder(self):
+        rows = [
+            _holding("A", "Manager A", "X", "Stock X", 100),
+            _holding("A", "Manager A", "X", "Stock X", 200),
+            _holding("B", "Manager B", "X", "Stock X", 400),
+        ]
+        result = holders_of_cusip(pd.DataFrame(rows), "X")
+        assert len(result) == 2
+        assert result.set_index("manager_name").loc["Manager A", "value_usd"] == 300
+
+
+class TestConsensusTrend:
+    @pytest.fixture
+    def holdings(self) -> pd.DataFrame:
+        def h(cik, mgr, period, value):
+            return {
+                "cik": cik, "manager_name": mgr, "cusip": "X", "name_of_issuer": "Stock X",
+                "value_usd": value, "shares": value, "is_option": False, "period_date": period,
+            }
+
+        rows = [
+            # Q1: only A holds X
+            h("A", "Manager A", "2024-03-31", 100),
+            # Q2: A and B both hold X
+            h("A", "Manager A", "2024-06-30", 120),
+            h("B", "Manager B", "2024-06-30", 200),
+            # Q3: nobody holds X (both exited) -- represented by a row for
+            # a DIFFERENT cusip so the period itself still appears in the data
+            {
+                "cik": "A", "manager_name": "Manager A", "cusip": "Y", "name_of_issuer": "Stock Y",
+                "value_usd": 50, "shares": 50, "is_option": False, "period_date": "2024-09-30",
+            },
+        ]
+        return pd.DataFrame(rows)
+
+    def test_columns(self, holdings):
+        result = consensus_trend(holdings, "X")
+        assert list(result.columns) == ["period_date", "holder_count", "total_value_usd", "avg_weight_pct"]
+
+    def test_holder_count_changes_across_quarters(self, holdings):
+        result = consensus_trend(holdings, "X").set_index("period_date")
+        assert result.loc["2024-03-31", "holder_count"] == 1
+        assert result.loc["2024-06-30", "holder_count"] == 2
+
+    def test_quarter_with_no_holders_is_zero_not_missing(self, holdings):
+        result = consensus_trend(holdings, "X").set_index("period_date")
+        assert "2024-09-30" in result.index
+        assert result.loc["2024-09-30", "holder_count"] == 0
+        assert result.loc["2024-09-30", "total_value_usd"] == 0
+
+    def test_sorted_by_period_ascending(self, holdings):
+        result = consensus_trend(holdings, "X")
+        assert list(result["period_date"]) == ["2024-03-31", "2024-06-30", "2024-09-30"]
+
+    def test_empty_input_returns_empty_with_columns(self):
+        result = consensus_trend(pd.DataFrame(columns=["cik", "cusip", "name_of_issuer", "value_usd", "period_date"]), "X")
+        assert result.empty
+        assert list(result.columns) == ["period_date", "holder_count", "total_value_usd", "avg_weight_pct"]
 
 
 class TestQuarterChanges:
@@ -288,3 +391,43 @@ class TestTopSells:
         ])
         result = top_sells(changes)
         assert result.empty
+
+
+class TestActivitySummary:
+    @pytest.fixture
+    def changes(self) -> pd.DataFrame:
+        rows = [
+            {"cik": "M1", "cusip": "AAA", "change_type": "new_buy"},
+            {"cik": "M2", "cusip": "AAA", "change_type": "new_buy"},
+            {"cik": "M3", "cusip": "AAA", "change_type": "add"},
+            {"cik": "M1", "cusip": "BBB", "change_type": "trim"},
+            {"cik": "M2", "cusip": "BBB", "change_type": "sold_out"},
+            {"cik": "M3", "cusip": "BBB", "change_type": "sold_out"},
+        ]
+        return pd.DataFrame(rows)
+
+    def test_columns(self, changes):
+        result = activity_summary(changes)
+        assert list(result.columns) == ["cusip", "n_new_buy", "n_add", "n_trim", "n_sold_out"]
+
+    def test_counts_per_change_type_per_cusip(self, changes):
+        result = activity_summary(changes).set_index("cusip")
+        assert result.loc["AAA", "n_new_buy"] == 2
+        assert result.loc["AAA", "n_add"] == 1
+        assert result.loc["AAA", "n_trim"] == 0
+        assert result.loc["AAA", "n_sold_out"] == 0
+        assert result.loc["BBB", "n_trim"] == 1
+        assert result.loc["BBB", "n_sold_out"] == 2
+
+    def test_missing_change_type_column_still_present_as_zero(self):
+        # AAA only ever appears as new_buy -- n_add/n_trim/n_sold_out
+        # columns must still exist (all zero), not be missing entirely.
+        changes = pd.DataFrame([{"cik": "M1", "cusip": "AAA", "change_type": "new_buy"}])
+        result = activity_summary(changes).set_index("cusip")
+        assert list(result.columns) == ["n_new_buy", "n_add", "n_trim", "n_sold_out"]
+        assert result.loc["AAA", "n_add"] == 0
+
+    def test_empty_input_returns_empty_with_columns(self):
+        result = activity_summary(pd.DataFrame(columns=["cusip", "change_type"]))
+        assert result.empty
+        assert list(result.columns) == ["cusip", "n_new_buy", "n_add", "n_trim", "n_sold_out"]

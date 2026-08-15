@@ -8,12 +8,21 @@ data/raw/
 data/logs/
 
 # Pre-built holdings snapshot IS committed, unlike the other data/*.db
-# files (market.db price/ticker cache, seen_filings.db alert state) --
-# 82 investors x 8 quarters takes long enough to fetch cold that a fresh
+# files (market.db price cache, seen_filings.db alert state) -- 82
+# investors x 20 quarters takes long enough to fetch cold that a fresh
 # Render/Streamlit Cloud deploy risks hitting the platform's request
 # timeout via the in-app "fetch now" button. Shipping a working snapshot
 # means the site is usable immediately; the sidebar button still refreshes
 # it live whenever that's wanted.
 !data/holdings.db
+
+# Same reasoning for the CUSIP->ticker map: it's effectively static (a
+# ticker rarely changes), but resolving it cold hits OpenFIGI's ~23
+# req/min unauthenticated rate limit -- 5000+ CUSIPs across 82 investors
+# x 20 quarters takes 10+ minutes on a fresh cache. Kept in its own file
+# (not market.db) specifically so this can be committed WITHOUT also
+# shipping market.db's "current price" snapshots, which go stale within
+# days and would be actively misleading if committed as if fresh.
+!data/tickers.db
 .pytest_cache/
 .DS_Store

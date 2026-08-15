@@ -51,6 +51,8 @@ TOP_SELLS_COLUMNS = [
     "total_value_reduced_usd",
 ]
 
+HOLDERS_COLUMNS = ["manager_name", "shares", "value_usd", "weight_pct"]
+
 
 def _weight_pct_within_manager(holdings: pd.DataFrame) -> pd.Series:
     """value_usd as a percentage of each row's own manager's (cik) total
@@ -132,6 +134,69 @@ def consensus_holdings(holdings: pd.DataFrame) -> pd.DataFrame:
     return (
         grouped[CONSENSUS_COLUMNS]
         .sort_values(["holder_count", "total_value_usd"], ascending=False)
+        .reset_index(drop=True)
+    )
+
+
+CONSENSUS_TREND_COLUMNS = ["period_date", "holder_count", "total_value_usd", "avg_weight_pct"]
+
+
+def consensus_trend(holdings: pd.DataFrame, cusip: str) -> pd.DataFrame:
+    """Per period_date: consensus_holdings() metrics for one cusip, across
+    every period_date present in `holdings` -- the quarter-over-quarter
+    history behind a "how has conviction in this stock changed" chart.
+
+    `holdings` should span multiple quarters (any number of managers),
+    options already included/excluded as the caller wants. A quarter
+    where no tracked manager held the cusip gets an explicit
+    holder_count=0 row rather than being skipped, so a line chart shows a
+    real drop to zero instead of a gap.
+    """
+    if holdings.empty:
+        return pd.DataFrame(columns=CONSENSUS_TREND_COLUMNS)
+
+    rows = []
+    for period, group in holdings.groupby("period_date"):
+        match = consensus_holdings(group)
+        match = match[match["cusip"] == cusip]
+        if match.empty:
+            rows.append(
+                {"period_date": period, "holder_count": 0, "total_value_usd": 0.0, "avg_weight_pct": 0.0}
+            )
+        else:
+            r = match.iloc[0]
+            rows.append(
+                {
+                    "period_date": period,
+                    "holder_count": r["holder_count"],
+                    "total_value_usd": r["total_value_usd"],
+                    "avg_weight_pct": r["avg_weight_pct"],
+                }
+            )
+    return pd.DataFrame(rows, columns=CONSENSUS_TREND_COLUMNS).sort_values("period_date").reset_index(drop=True)
+
+
+def holders_of_cusip(holdings: pd.DataFrame, cusip: str) -> pd.DataFrame:
+    """Drill-down for consensus_holdings(): which managers hold `cusip` in
+    the given snapshot, with each holder's shares/value and that
+    position's weight within their OWN portfolio (not the cross-manager
+    consensus weight).
+
+    `holdings` should be a single quarter's rows (options already
+    included/excluded as the caller wants), same scope as whatever was
+    passed to consensus_holdings() to produce the holder_count being
+    drilled into.
+    """
+    if holdings.empty:
+        return pd.DataFrame(columns=HOLDERS_COLUMNS)
+
+    df = _consolidate_by_manager(holdings)
+    df["weight_pct"] = _weight_pct_within_manager(df)
+    scoped = df[df["cusip"] == cusip]
+
+    return (
+        scoped[HOLDERS_COLUMNS]
+        .sort_values("value_usd", ascending=False)
         .reset_index(drop=True)
     )
 
@@ -254,6 +319,33 @@ def top_buys(changes: pd.DataFrame) -> pd.DataFrame:
         .sort_values(["n_new_buyers", "total_value_added_usd"], ascending=False)
         .reset_index(drop=True)
     )
+
+
+ACTIVITY_COLUMNS = ["cusip", "n_new_buy", "n_add", "n_trim", "n_sold_out"]
+
+
+def activity_summary(changes: pd.DataFrame) -> pd.DataFrame:
+    """Per cusip: how many managers each change_type applied to this
+    quarter -- the compact "+2 new / +1 add / -1 trim / -1 sold" signal
+    meant to sit inline in the consensus table, instead of requiring a
+    separate 최다매수/최다매도 tab visit to see any activity at all.
+
+    `changes` is quarter_changes()'s output (already excludes 'unchanged'
+    rows). A cusip with no activity this quarter simply isn't a row here
+    -- callers should left-join and fill zeros.
+    """
+    if changes.empty:
+        return pd.DataFrame(columns=ACTIVITY_COLUMNS)
+
+    pivot = changes.groupby(["cusip", "change_type"]).size().unstack(fill_value=0)
+    for col in ("new_buy", "add", "trim", "sold_out"):
+        if col not in pivot.columns:
+            pivot[col] = 0
+    pivot = pivot.rename(
+        columns={"new_buy": "n_new_buy", "add": "n_add", "trim": "n_trim", "sold_out": "n_sold_out"}
+    ).reset_index()
+
+    return pivot[ACTIVITY_COLUMNS]
 
 
 def top_sells(changes: pd.DataFrame) -> pd.DataFrame:

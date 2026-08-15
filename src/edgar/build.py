@@ -3,9 +3,11 @@
 
 Multiple quarters (not just the latest) are kept so (a) quarter-over-
 quarter change analysis (src/analytics/consensus.py: quarter_changes) has
-something to compare against, and (b) the backtest
+something to compare against, (b) the backtest
 (src/analytics/backtest.py) has enough historical rebalance points to be
-meaningful (QUARTERS_TO_FETCH=8 -> up to 7 rebalances / ~2 years). Rows
+meaningful, and (c) the UI's as-of period screener
+(src/app/main.py) has ~5 years of quarters to pick from
+(QUARTERS_TO_FETCH=20 -> up to 19 rebalances / ~5 years). Rows
 are tagged with period_rank: 0 = each manager's most recent filed period,
 1 = their next-most-recent, etc. Because managers can lag each other
 (e.g. one filer's "most recent" period might be a quarter behind
@@ -45,7 +47,7 @@ CONFIG_PATH = ROOT / "config" / "investors.yaml"
 CACHE_DIR = ROOT / "data" / "raw"
 DB_PATH = ROOT / "data" / "holdings.db"
 
-QUARTERS_TO_FETCH = 8
+QUARTERS_TO_FETCH = 20
 
 
 def load_investors(config_path: Path = CONFIG_PATH) -> list[dict]:

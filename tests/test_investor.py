@@ -1,7 +1,7 @@
 import pandas as pd
 import pytest
 
-from src.analytics.investor import investor_portfolio, portfolio_summary
+from src.analytics.investor import investor_portfolio, investor_trend, portfolio_summary, position_trend
 
 
 def _holding(cik, manager_name, cusip, name_of_issuer, value_usd, shares=None, is_option=False):
@@ -165,3 +165,109 @@ class TestPortfolioSummary:
         assert list(result.columns) == [
             "n_holdings", "top10_concentration_pct", "turnover_pct", "option_weight_pct",
         ]
+
+
+class TestInvestorTrend:
+    @pytest.fixture
+    def holdings(self) -> pd.DataFrame:
+        def h(period, cusip, value, is_option=False):
+            return {
+                "cik": "A", "manager_name": "Manager A", "cusip": cusip, "name_of_issuer": f"Stock {cusip}",
+                "value_usd": value, "shares": value, "is_option": is_option, "period_date": period,
+            }
+
+        rows = [
+            h("2024-03-31", "P", 1000),
+            h("2024-03-31", "Q", 500),
+            h("2024-06-30", "P", 1200),  # add
+            h("2024-06-30", "R", 300),  # new_buy; Q sold_out
+            h("2024-06-30", "OPT", 100, is_option=True),
+        ]
+        return pd.DataFrame(rows)
+
+    def test_columns(self, holdings):
+        result = investor_trend(holdings[~holdings["is_option"]], holdings)
+        assert list(result.columns) == [
+            "period_date", "n_holdings", "top10_concentration_pct", "turnover_pct", "option_weight_pct",
+        ]
+
+    def test_one_row_per_period(self, holdings):
+        result = investor_trend(holdings[~holdings["is_option"]], holdings)
+        assert list(result["period_date"]) == ["2024-03-31", "2024-06-30"]
+
+    def test_first_period_has_no_turnover_baseline(self, holdings):
+        result = investor_trend(holdings[~holdings["is_option"]], holdings).set_index("period_date")
+        assert pd.isna(result.loc["2024-03-31", "turnover_pct"])
+
+    def test_second_period_computed_against_first(self, holdings):
+        # prev: P, Q (n_prev=2); curr: P, R (n_curr=2); 1 new_buy(R) + 1 sold_out(Q)
+        result = investor_trend(holdings[~holdings["is_option"]], holdings).set_index("period_date")
+        assert result.loc["2024-06-30", "turnover_pct"] == pytest.approx(2 / 4 * 100)
+        assert result.loc["2024-06-30", "n_holdings"] == 2
+
+    def test_option_weight_uses_raw_frame_regardless_of_filter(self, holdings):
+        result = investor_trend(holdings[~holdings["is_option"]], holdings).set_index("period_date")
+        # 2024-06-30: stock value 1200+300=1500, option value 100 -> 100/1600
+        assert result.loc["2024-06-30", "option_weight_pct"] == pytest.approx(100 / 1600 * 100)
+
+    def test_empty_input_returns_empty_with_columns(self):
+        empty = pd.DataFrame(columns=["cik", "manager_name", "cusip", "name_of_issuer", "value_usd", "shares", "period_date"])
+        result = investor_trend(empty, empty)
+        assert result.empty
+        assert list(result.columns) == [
+            "period_date", "n_holdings", "top10_concentration_pct", "turnover_pct", "option_weight_pct",
+        ]
+
+
+class TestPositionTrend:
+    @pytest.fixture
+    def holdings(self) -> pd.DataFrame:
+        def h(period, cusip, value, shares=None):
+            return {
+                "cik": "A", "manager_name": "Manager A", "cusip": cusip, "name_of_issuer": f"Stock {cusip}",
+                "value_usd": value, "shares": shares if shares is not None else value, "is_option": False,
+                "period_date": period,
+            }
+
+        rows = [
+            h("2024-03-31", "P", 1000, shares=100),
+            h("2024-03-31", "Q", 1000, shares=100),
+            h("2024-06-30", "P", 1500, shares=150),  # P grew
+            # Q dropped entirely this quarter
+            h("2024-06-30", "R", 500, shares=50),
+        ]
+        return pd.DataFrame(rows)
+
+    def test_columns(self, holdings):
+        result = position_trend(holdings, "P")
+        assert list(result.columns) == ["period_date", "shares", "value_usd", "weight_pct"]
+
+    def test_one_row_per_period(self, holdings):
+        result = position_trend(holdings, "P")
+        assert list(result["period_date"]) == ["2024-03-31", "2024-06-30"]
+
+    def test_tracks_shares_and_value_across_quarters(self, holdings):
+        result = position_trend(holdings, "P").set_index("period_date")
+        assert result.loc["2024-03-31", "shares"] == 100
+        assert result.loc["2024-06-30", "shares"] == 150
+        assert result.loc["2024-06-30", "value_usd"] == 1500
+
+    def test_weight_pct_within_manager_own_portfolio(self, holdings):
+        result = position_trend(holdings, "P").set_index("period_date")
+        # Q1: P=1000, Q=1000 -> P weight 50%
+        assert result.loc["2024-03-31", "weight_pct"] == pytest.approx(50.0)
+        # Q2: P=1500, R=500 -> P weight 75%
+        assert result.loc["2024-06-30", "weight_pct"] == pytest.approx(75.0)
+
+    def test_quarter_not_held_is_zero_row_not_missing(self, holdings):
+        result = position_trend(holdings, "Q").set_index("period_date")
+        assert "2024-06-30" in result.index
+        assert result.loc["2024-06-30", "shares"] == 0
+        assert result.loc["2024-06-30", "value_usd"] == 0
+        assert result.loc["2024-06-30", "weight_pct"] == 0
+
+    def test_empty_input_returns_empty_with_columns(self):
+        empty = pd.DataFrame(columns=["cik", "manager_name", "cusip", "name_of_issuer", "value_usd", "shares", "period_date"])
+        result = position_trend(empty, "P")
+        assert result.empty
+        assert list(result.columns) == ["period_date", "shares", "value_usd", "weight_pct"]

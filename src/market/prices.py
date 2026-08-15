@@ -230,3 +230,20 @@ def get_price_history(ticker: str, start: str, end: str, db_path: Path) -> pd.Se
         return pd.Series(dtype="float64", name=ticker)
     cached["date"] = pd.to_datetime(cached["date"])
     return cached.set_index("date")["close"].sort_index().rename(ticker)
+
+
+def get_52week_range(tickers: list[str], db_path: Path) -> dict[str, tuple[Optional[float], Optional[float]]]:
+    """Resolve tickers to {ticker: (52w_low, 52w_high)} in daily closes.
+
+    Built on get_price_history() (same DAILY_PRICE_TABLE cache, no new
+    table) rather than a separate yfinance call, so a ticker already
+    warmed by a price-history/backtest fetch costs nothing extra here.
+    (None, None) for a ticker with no price history at all.
+    """
+    end = date.today().isoformat()
+    start = (date.today() - timedelta(days=365)).isoformat()
+    result: dict[str, tuple[Optional[float], Optional[float]]] = {}
+    for ticker in tickers:
+        series = get_price_history(ticker, start, end, db_path)
+        result[ticker] = (float(series.min()), float(series.max())) if not series.empty else (None, None)
+    return result

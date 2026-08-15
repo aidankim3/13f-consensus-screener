@@ -1,6 +1,6 @@
 pandas>=2.2
 requests>=2.31
-streamlit>=1.37
+streamlit>=1.61
 PyYAML>=6.0
 lxml>=5.2
 pytest>=8.0

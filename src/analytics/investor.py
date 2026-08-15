@@ -8,7 +8,12 @@ from __future__ import annotations
 
 import pandas as pd
 
-from src.analytics.consensus import CHANGE_COLUMNS, _build_change_table
+from src.analytics.consensus import (
+    CHANGE_COLUMNS,
+    _build_change_table,
+    _consolidate_by_manager,
+    _weight_pct_within_manager,
+)
 
 PORTFOLIO_COLUMNS = CHANGE_COLUMNS
 
@@ -114,3 +119,79 @@ def portfolio_summary(
             }
         ]
     )[SUMMARY_COLUMNS]
+
+
+TREND_COLUMNS = ["period_date"] + SUMMARY_COLUMNS
+
+
+def investor_trend(holdings_filtered: pd.DataFrame, holdings_raw: pd.DataFrame) -> pd.DataFrame:
+    """Per period_date: portfolio_summary() metrics for one manager, across
+    every period_date present in `holdings_filtered` -- the quarter-over-
+    quarter history behind a "how has this investor's portfolio changed"
+    chart.
+
+    Both frames must already be scoped to a SINGLE manager (one cik) and
+    span multiple quarters. `holdings_filtered` reflects the caller's
+    option-inclusion choice (drives n_holdings/top10_concentration_pct/
+    turnover_pct); `holdings_raw` is this manager's unfiltered holdings,
+    used only for option_weight_pct so it reflects the manager's TRUE mix
+    regardless of the toggle -- same split the single-quarter view uses.
+    Each period's turnover_pct is computed against its own immediately
+    preceding period in `holdings_filtered` (NaN for the first one, same
+    as portfolio_summary's "no prior quarter" case).
+    """
+    if holdings_filtered.empty:
+        return pd.DataFrame(columns=TREND_COLUMNS)
+
+    periods = sorted(holdings_filtered["period_date"].dropna().unique())
+    rows = []
+    for i, period in enumerate(periods):
+        curr = holdings_filtered[holdings_filtered["period_date"] == period]
+        prev = (
+            holdings_filtered[holdings_filtered["period_date"] == periods[i - 1]]
+            if i > 0
+            else holdings_filtered.iloc[0:0]
+        )
+        raw_curr = holdings_raw[holdings_raw["period_date"] == period]
+        portfolio = investor_portfolio(prev, curr)
+        summary = portfolio_summary(portfolio, raw_curr).iloc[0]
+        rows.append({"period_date": period, **summary.to_dict()})
+
+    return pd.DataFrame(rows, columns=TREND_COLUMNS)
+
+
+POSITION_TREND_COLUMNS = ["period_date", "shares", "value_usd", "weight_pct"]
+
+
+def position_trend(holdings: pd.DataFrame, cusip: str) -> pd.DataFrame:
+    """Per period_date: this manager's shares/value/weight_pct in ONE
+    cusip, across every period_date present in `holdings` -- "how has
+    this investor's position in this specific stock changed" (e.g.
+    Berkshire's AAPL holding across 5 years).
+
+    `holdings` must already be scoped to a SINGLE manager (one cik) and
+    span multiple quarters. A quarter where the manager didn't hold the
+    cusip at all gets an explicit zero row (not skipped), so a line chart
+    shows a real drop to zero instead of a gap.
+    """
+    if holdings.empty:
+        return pd.DataFrame(columns=POSITION_TREND_COLUMNS)
+
+    rows = []
+    for period, group in holdings.groupby("period_date"):
+        consolidated = _consolidate_by_manager(group)
+        consolidated["weight_pct"] = _weight_pct_within_manager(consolidated)
+        match = consolidated[consolidated["cusip"] == cusip]
+        if match.empty:
+            rows.append({"period_date": period, "shares": 0, "value_usd": 0.0, "weight_pct": 0.0})
+        else:
+            r = match.iloc[0]
+            rows.append(
+                {
+                    "period_date": period,
+                    "shares": r["shares"],
+                    "value_usd": r["value_usd"],
+                    "weight_pct": r["weight_pct"],
+                }
+            )
+    return pd.DataFrame(rows, columns=POSITION_TREND_COLUMNS).sort_values("period_date").reset_index(drop=True)
