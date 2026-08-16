@@ -5,7 +5,9 @@ data/*.sqlite
 data/*.db
 data/*.parquet
 data/raw/
+data/raw_form4/
 data/logs/
+data/insider_build_failed_tickers.txt
 
 # Pre-built holdings snapshot IS committed, unlike the other data/*.db
 # files (market.db price cache, seen_filings.db alert state) -- 82
@@ -24,5 +26,21 @@ data/logs/
 # shipping market.db's "current price" snapshots, which go stale within
 # days and would be actively misleading if committed as if fresh.
 !data/tickers.db
+
+# Same reasoning again for the Form 4 insider-purchase snapshot: fetching
+# it cold (853 consensus stocks -> issuer CIK -> Form 4 filing list ->
+# per-filing XML) takes on the order of an hour even with retries and
+# disk caching. issuer_ciks.db is NOT committed (unlike this) -- it's a
+# one-request-per-cold-run bulk fetch, cheap enough to just rebuild.
+!data/insider.db
+
+# Same reasoning again for the cross-form "recent activity" feed
+# (Home's Portfolio Updates section): cheap to rebuild (82 requests,
+# ~15s) but committed anyway so a fresh deploy shows real data
+# immediately instead of an empty state until the next scheduled
+# refresh_data.yml run.
+!data/recent_activity.db
 .pytest_cache/
 .DS_Store
+streamlit_stdout.log
+streamlit_stderr.log

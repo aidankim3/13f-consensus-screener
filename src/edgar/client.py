@@ -174,6 +174,26 @@ def list_13f_filings(submissions: dict[str, Any]) -> list[dict[str, Any]]:
     return list_filings(submissions, _13F_FORMS)
 
 
+def list_recent_filings(submissions: dict[str, Any], limit: int = 5) -> list[dict[str, Any]]:
+    """The most recent `limit` filings of ANY form type from a submissions
+    payload, most recent first -- unlike list_filings/list_13f_filings,
+    not restricted to a specific set of forms. SEC's own submissions.json
+    already orders "recent" most-recent-first, so this is just a slice,
+    not a sort. Powers a general "what has this filer submitted lately"
+    activity feed (e.g. Home's "Superinvestor Portfolio Updates"), as
+    opposed to the 13F-specific holdings pipeline.
+    """
+    recent = submissions.get("filings", {}).get("recent", {})
+    forms = recent.get("form", [])
+    filing_dates = recent.get("filingDate", [])
+    accession_numbers = recent.get("accessionNumber", [])
+    n = min(limit, len(forms), len(filing_dates), len(accession_numbers))
+    return [
+        {"form": forms[i], "filingDate": filing_dates[i], "accessionNumber": accession_numbers[i]}
+        for i in range(n)
+    ]
+
+
 def list_activist_filings(submissions: dict[str, Any]) -> list[dict[str, Any]]:
     """Extract 13D/13G (+ amendments) filing metadata from a submissions
     payload.

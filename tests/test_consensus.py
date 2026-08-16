@@ -3,6 +3,7 @@ import pytest
 
 from src.analytics.consensus import (
     activity_summary,
+    big_bets,
     consensus_holdings,
     consensus_trend,
     holders_of_cusip,
@@ -154,6 +155,80 @@ class TestHoldersOfCusip:
         result = holders_of_cusip(pd.DataFrame(rows), "X")
         assert len(result) == 2
         assert result.set_index("manager_name").loc["Manager A", "value_usd"] == 300
+
+
+class TestBigBets:
+    @pytest.fixture
+    def holdings(self) -> pd.DataFrame:
+        # X is held by 4 managers at very different conviction levels:
+        # A=60% (qualifies, and is the max), B=10% (qualifies), C=2% and
+        # D=1.5% (both too small to qualify at the default 5% threshold),
+        # but all 4 still count as holders. T is a low-conviction-only
+        # stock (held at just 3% by E) that never qualifies for anyone,
+        # so it should never appear in the result at all.
+        rows = [
+            _holding("A", "Manager A", "X", "Stock X", 600),
+            _holding("A", "Manager A", "Y", "Stock Y", 400),
+            _holding("B", "Manager B", "X", "Stock X", 100),
+            _holding("B", "Manager B", "Z", "Stock Z", 900),
+            _holding("C", "Manager C", "X", "Stock X", 20),
+            _holding("C", "Manager C", "W", "Stock W", 980),
+            _holding("D", "Manager D", "X", "Stock X", 15),
+            _holding("D", "Manager D", "V", "Stock V", 985),
+            _holding("E", "Manager E", "T", "Stock T", 30),
+            _holding("E", "Manager E", "Q", "Stock Q", 970),
+        ]
+        return pd.DataFrame(rows)
+
+    def test_columns(self, holdings):
+        result = big_bets(holdings)
+        assert list(result.columns) == [
+            "cusip", "name_of_issuer", "holder_count", "max_weight_pct", "max_weight_manager",
+        ]
+
+    def test_never_qualifying_stock_excluded(self, holdings):
+        result = big_bets(holdings, threshold_pct=5.0)
+        # T only ever reaches 3% (held once, by E) -- never clears 5%
+        assert "T" not in set(result["cusip"])
+
+    def test_max_weight_and_manager_picked_correctly(self, holdings):
+        result = big_bets(holdings, threshold_pct=5.0).set_index("cusip")
+        # X: A=60%, B=10%, C=2%, D=1.5% -- A/B qualify, max is A's 60%
+        assert result.loc["X", "max_weight_pct"] == pytest.approx(60.0)
+        assert result.loc["X", "max_weight_manager"] == "Manager A"
+
+    def test_holder_count_is_total_not_just_qualifying(self, holdings):
+        result = big_bets(holdings, threshold_pct=5.0).set_index("cusip")
+        # X is held by A, B, C, AND D (4 total) even though only A/B (2) qualify individually
+        assert result.loc["X", "holder_count"] == 4
+
+    def test_sorted_by_max_weight_descending(self, holdings):
+        result = big_bets(holdings, threshold_pct=5.0)
+        # V=98.5%(D), W=98%(C), Q=97%(E), Y=40%(A) [wait Z=90%(B) too] -- just check the top is the highest
+        assert result.iloc[0]["max_weight_pct"] == pytest.approx(result["max_weight_pct"].max())
+        assert list(result["max_weight_pct"]) == sorted(result["max_weight_pct"], reverse=True)
+
+    def test_higher_threshold_excludes_more(self, holdings):
+        result_50 = big_bets(holdings, threshold_pct=50.0)
+        # X's max (A's 60%) still clears 50%
+        assert "X" in set(result_50["cusip"])
+        result_strict = big_bets(holdings, threshold_pct=65.0)
+        # X's max (60%) no longer clears 65%
+        assert "X" not in set(result_strict["cusip"])
+
+    def test_no_qualifying_stocks_returns_empty(self, holdings):
+        result = big_bets(holdings, threshold_pct=99.9)
+        assert result.empty
+        assert list(result.columns) == [
+            "cusip", "name_of_issuer", "holder_count", "max_weight_pct", "max_weight_manager",
+        ]
+
+    def test_empty_input_returns_empty_with_columns(self):
+        result = big_bets(pd.DataFrame(columns=["cik", "manager_name", "cusip", "name_of_issuer", "value_usd", "shares"]))
+        assert result.empty
+        assert list(result.columns) == [
+            "cusip", "name_of_issuer", "holder_count", "max_weight_pct", "max_weight_manager",
+        ]
 
 
 class TestConsensusTrend:

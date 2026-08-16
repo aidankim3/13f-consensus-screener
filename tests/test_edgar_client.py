@@ -8,6 +8,7 @@ from src.edgar.client import (
     filing_archive_dir_url,
     list_13f_filings,
     list_activist_filings,
+    list_recent_filings,
     normalize_cik,
 )
 
@@ -159,3 +160,48 @@ class TestListActivistFilings:
     def test_excludes_13f(self):
         submissions = self._submissions(["13F-HR", "13F-HR/A"])
         assert list_activist_filings(submissions) == []
+
+
+class TestListRecentFilings:
+    def _submissions(self, forms):
+        n = len(forms)
+        return {
+            "filings": {
+                "recent": {
+                    "form": forms,
+                    "filingDate": [f"2026-01-{i + 1:02d}" for i in range(n)],
+                    "accessionNumber": [f"0001-26-00000{i}" for i in range(n)],
+                }
+            }
+        }
+
+    def test_not_restricted_to_any_form_type(self):
+        # Unlike list_13f_filings/list_activist_filings, every form type
+        # passes through -- this is a general "recent activity" feed.
+        submissions = self._submissions(["13F-HR", "10-K", "4", "SC 13G", "8-K"])
+        result = list_recent_filings(submissions, limit=5)
+        assert [f["form"] for f in result] == ["13F-HR", "10-K", "4", "SC 13G", "8-K"]
+
+    def test_limit_takes_the_first_n_not_a_sort(self):
+        # SEC's own "recent" block is already most-recent-first; this is
+        # a slice, not a re-sort.
+        submissions = self._submissions(["13F-HR", "10-K", "4", "SC 13G", "8-K"])
+        result = list_recent_filings(submissions, limit=2)
+        assert [f["form"] for f in result] == ["13F-HR", "10-K"]
+
+    def test_limit_larger_than_available_returns_all(self):
+        submissions = self._submissions(["13F-HR", "10-K"])
+        result = list_recent_filings(submissions, limit=10)
+        assert len(result) == 2
+
+    def test_preserves_form_filingdate_accessionnumber_only(self):
+        submissions = self._submissions(["13F-HR"])
+        [filing] = list_recent_filings(submissions, limit=1)
+        assert set(filing.keys()) == {"form", "filingDate", "accessionNumber"}
+
+    def test_empty_recent_returns_empty_list(self):
+        submissions = {"filings": {"recent": {"form": []}}}
+        assert list_recent_filings(submissions) == []
+
+    def test_missing_filings_key_returns_empty_list(self):
+        assert list_recent_filings({}) == []

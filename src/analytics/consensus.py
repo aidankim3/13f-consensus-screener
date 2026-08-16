@@ -138,6 +138,43 @@ def consensus_holdings(holdings: pd.DataFrame) -> pd.DataFrame:
     )
 
 
+BIG_BETS_COLUMNS = ["cusip", "name_of_issuer", "holder_count", "max_weight_pct", "max_weight_manager"]
+
+
+def big_bets(holdings: pd.DataFrame, threshold_pct: float = 5.0) -> pd.DataFrame:
+    """High-conviction screen (Dataroma's "Big Bets"): stocks where at
+    least one manager has committed >= threshold_pct of their OWN
+    portfolio to it -- concentration, not just how many managers hold it.
+
+    For each qualifying cusip: holder_count is the TOTAL number of
+    tracked managers holding it (from consensus_holdings, not just those
+    over threshold), plus the single highest per-manager weight_pct and
+    which manager holds it. Sorted by that max weight, descending.
+    """
+    if holdings.empty:
+        return pd.DataFrame(columns=BIG_BETS_COLUMNS)
+
+    consensus = consensus_holdings(holdings)
+
+    df = _consolidate_by_manager(holdings)
+    df["weight_pct"] = _weight_pct_within_manager(df)
+    qualifying = df[df["weight_pct"] >= threshold_pct]
+    if qualifying.empty:
+        return pd.DataFrame(columns=BIG_BETS_COLUMNS)
+
+    best_idx = qualifying.groupby("cusip")["weight_pct"].idxmax()
+    best = qualifying.loc[best_idx, ["cusip", "manager_name", "weight_pct"]].rename(
+        columns={"manager_name": "max_weight_manager", "weight_pct": "max_weight_pct"}
+    )
+    merged = best.merge(consensus[["cusip", "name_of_issuer", "holder_count"]], on="cusip", how="left")
+
+    return (
+        merged[BIG_BETS_COLUMNS]
+        .sort_values("max_weight_pct", ascending=False)
+        .reset_index(drop=True)
+    )
+
+
 CONSENSUS_TREND_COLUMNS = ["period_date", "holder_count", "total_value_usd", "avg_weight_pct"]
 
 

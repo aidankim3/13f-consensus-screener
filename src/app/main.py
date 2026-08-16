@@ -36,6 +36,7 @@ import streamlit as st
 from src.analytics.backtest import consensus_asof_schedule, simulate_portfolio
 from src.analytics.consensus import (
     activity_summary,
+    big_bets,
     consensus_holdings,
     consensus_trend,
     holders_of_cusip,
@@ -44,11 +45,14 @@ from src.analytics.consensus import (
     top_sells,
 )
 from src.analytics.entry_price import with_entry_price_comparison
+from src.analytics.insider import insider_buy_summary
 from src.analytics.investor import investor_portfolio, investor_trend, portfolio_summary, position_trend
 from src.analytics.overlap import jaccard_similarity, pairwise_overlap, similarity_matrix
 from src.analytics.sp500_grid import sp500_ownership_summary
 from src.edgar.build import CACHE_DIR, QUARTERS_TO_FETCH, build_all, load_investors
 from src.edgar.client import EdgarClient
+from src.edgar.insider_storage import load_insider_table
+from src.edgar.recent_activity import load_recent_activity_table
 from src.edgar.storage import load_holdings_table, save_holdings_table
 from src.market.prices import get_52week_range, get_current_prices, get_price_history, get_quarterly_avg_prices
 from src.market.sector_map import resolve_sectors
@@ -58,6 +62,12 @@ from src.market.ticker_map import resolve_tickers
 ROOT = _REPO_ROOT
 DB_PATH = ROOT / "data" / "holdings.db"
 MARKET_DB_PATH = ROOT / "data" / "market.db"
+INSIDER_DB_PATH = ROOT / "data" / "insider.db"
+RECENT_ACTIVITY_DB_PATH = ROOT / "data" / "recent_activity.db"
+# Matches scripts/build_insider.py's LOOKBACK_DAYS -- both live here rather
+# than being imported from the script, since the script isn't meant to be
+# imported (its module-level code has side effects if run directly).
+INSIDER_LOOKBACK_LABEL = "최근 100일"
 # Deliberately separate from MARKET_DB_PATH: a CUSIP->ticker mapping is
 # effectively static and safe to pre-build + commit (like holdings.db), but
 # MARKET_DB_PATH also holds "current price" snapshots that go stale within
@@ -133,6 +143,32 @@ def _load_holdings(db_path: str) -> pd.DataFrame:
 @st.cache_data(ttl=86400)
 def _load_sp500(csv_path: str) -> pd.DataFrame:
     return load_sp500(Path(csv_path))
+
+
+@st.cache_data(ttl=3600)
+def _load_insider_transactions(db_path: str) -> pd.DataFrame:
+    """Pre-built Form 4 insider-purchase snapshot (see scripts/build_insider.py)
+    -- read-only here, no live SEC fetching on page load. Empty (correctly
+    columned) if the build hasn't been run yet.
+    """
+    df = load_insider_table(Path(db_path))
+    if not df.empty:
+        df["filing_date"] = pd.to_datetime(df["filing_date"])
+        df["transaction_date"] = pd.to_datetime(df["transaction_date"])
+    return df
+
+
+@st.cache_data(ttl=300)
+def _load_recent_activity(db_path: str) -> pd.DataFrame:
+    """Pre-built cross-form-type filing feed (see
+    scripts/build_recent_activity.py) -- read-only here, no live SEC
+    fetching on page load. Empty (correctly columned) if the build
+    hasn't been run yet.
+    """
+    df = load_recent_activity_table(Path(db_path))
+    if not df.empty:
+        df["filing_date"] = pd.to_datetime(df["filing_date"])
+    return df
 
 
 def _build_data_inline() -> None:
@@ -853,6 +889,18 @@ def _compute_scoped_data(
     return current_all, previous_all, consensus_all, changes, ticker_map, trend_window
 
 
+def _bullet_rows(df: pd.DataFrame, formatter) -> None:
+    """Render each row of `df` as one Dataroma-style bullet line (plain
+    text, not an interactive table) -- `formatter(row) -> str` builds the
+    line. The Home page's simple-list look uses this everywhere instead
+    of st.dataframe.
+    """
+    if df.empty:
+        st.caption("데이터가 없습니다.")
+        return
+    st.markdown("\n".join(f"- {formatter(row)}" for _, row in df.iterrows()))
+
+
 def _page_home(
     holdings: pd.DataFrame,
     sp500: pd.DataFrame,
@@ -863,16 +911,27 @@ def _page_home(
 ) -> None:
     st.title("SuperFolio")
     st.caption(
-        "선별한 슈퍼인베스터들의 SEC 13F 공시를 교차 비교하는 한국형 컨센서스 스크리너입니다. "
-        "13F는 미국 롱 주식(및 옵션)만 포함하며, 숏 포지션·채권·해외 주식·현금은 "
-        "여기 나타나지 않습니다 — 이건 각 투자자의 '전체 포트폴리오'가 아니라 "
-        "'13F에 신고된 미국 롱 익스포저'입니다."
+        "선별한 슈퍼인베스터들의 SEC 공시를 교차 비교하는 한국형 컨센서스 스크리너입니다. "
+        "컨센서스·보유 분석은 13F(미국 롱 주식·옵션만 포함) 기준이고, 아래 'Portfolio "
+        "Updates'는 13F를 포함한 전체 SEC 공시(13D/13G 등)를 다룹니다 — 13F는 각 투자자의 "
+        "'전체 포트폴리오'가 아니라 '13F에 신고된 미국 롱 익스포저'만 보여줍니다."
     )
 
-    latest = holdings[holdings["period_rank"] == 0]
-    latest_stock_only = latest[~latest["is_option"]]
-    consensus_latest = consensus_holdings(latest_stock_only)
-    data_latest_date = latest["period_date"].max()
+    period_options = _available_periods(holdings)
+    selected_period = period_options[0] if period_options else None
+    previous_period = period_options[1] if len(period_options) > 1 else None
+    previous_2q_period = period_options[2] if len(period_options) > 2 else None
+
+    current_all = _filter_by_period(holdings, selected_period, include_options=False)
+    previous_all = _filter_by_period(holdings, previous_period, include_options=False)
+    previous_2q_all = _filter_by_period(holdings, previous_2q_period, include_options=False)
+
+    consensus_latest = consensus_holdings(current_all)
+    changes_1q = quarter_changes(previous_all, current_all)
+    changes_2q = quarter_changes(previous_2q_all, current_all)
+    bets = big_bets(current_all, threshold_pct=5.0)
+    insider_df = _load_insider_transactions(str(INSIDER_DB_PATH))
+    data_latest_date = current_all["period_date"].max() if not current_all.empty else pd.NaT
 
     kpi1, kpi2 = st.columns(2)
     kpi1.metric(
@@ -903,53 +962,153 @@ def _page_home(
 
     left, right = st.columns(2, gap="large")
 
+    # ── LEFT: Superinvestor Portfolio Updates + Latest Significant Buys ──
     with left:
-        st.markdown("##### 최근 공시")
-        st.caption("추적 투자자들이 SEC에 가장 최근 제출한 13F 순서입니다.")
-        recent_filings = (
-            latest[["manager_name", "period_date", "filing_date"]]
-            .drop_duplicates()
-            .sort_values("filing_date", ascending=False)
-            .head(15)
-            .copy()
+        st.markdown("##### Superinvestor Portfolio Updates")
+        st.caption(
+            "추적 투자자들의 최근 SEC 공시입니다 (13F 보유내역뿐 아니라 13D/13G 등 전체 "
+            "공시 유형 포함, 투자자당 최근 3건). 하루 2회(공시 마감 임박 시 3시간마다) "
+            "자동 갱신되는 스냅샷 기준입니다."
         )
-        recent_filings["filing_date"] = pd.to_datetime(recent_filings["filing_date"])
-        st.dataframe(
-            recent_filings,
-            hide_index=True,
-            width="stretch",
-            row_height=28,
-            column_config={
-                "manager_name": st.column_config.TextColumn("투자자"),
-                "period_date": st.column_config.DateColumn("기준일"),
-                "filing_date": st.column_config.DateColumn("제출일"),
-            },
-        )
+        activity = _load_recent_activity(str(RECENT_ACTIVITY_DB_PATH)).head(15)
+        if activity.empty:
+            st.caption("아직 데이터를 받아오지 않았습니다 (scripts/build_recent_activity.py 실행 필요).")
+        else:
+            _bullet_rows(
+                activity,
+                lambda row: f"**{row['manager_name']}** — {row['form']} 제출 ({row['filing_date'].date()})",
+            )
         st.page_link(page_superinvestors, label="Superinvestors 전체 보기 →")
 
-    with right:
-        st.markdown("##### Superinvestors 보유 종목")
-        st.caption("추적 투자자 합산 컨센서스 상위 종목입니다 (최신 분기, 옵션 제외).")
-        top_consensus = (
-            consensus_latest[consensus_latest["holder_count"] >= 2]
-            .sort_values("holder_count", ascending=False)
-            .head(15)[["name_of_issuer", "holder_count", "avg_weight_pct"]]
+        st.divider()
+        st.markdown("##### Latest Significant Insider Buys")
+        st.caption(
+            "추적 투자자들이 보유한 종목의 SEC Form 4 기준 임원/이사 장내 매수(코드 'P', "
+            f"$50,000 이상)입니다. {INSIDER_LOOKBACK_LABEL} 스냅샷 기준 — 실시간 조회가 "
+            "아니라 주기적으로 다시 받아와야 최신 상태가 됩니다."
         )
-        if top_consensus.empty:
-            st.caption("아직 2인 이상 공통 보유 종목이 없습니다.")
+        sig_buys = insider_df[insider_df["value_usd"] >= 50_000].sort_values(
+            "filing_date", ascending=False
+        ).head(15)
+        if insider_df.empty:
+            st.caption("아직 Form 4 데이터를 받아오지 않았습니다 (scripts/build_insider.py 실행 필요).")
         else:
-            st.dataframe(
-                top_consensus,
-                hide_index=True,
-                width="stretch",
-                row_height=28,
-                column_config={
-                    "name_of_issuer": st.column_config.TextColumn("종목명"),
-                    "holder_count": st.column_config.NumberColumn("보유자 수", format="%d"),
-                    "avg_weight_pct": st.column_config.NumberColumn("평균 비중(%)", format="%.2f%%"),
-                },
+            _bullet_rows(
+                sig_buys,
+                lambda row: (
+                    f"**{row['issuer_name']}** — {row['owner_name']} 매수 "
+                    f"${row['value_usd']:,.0f} @ ${row['price_per_share']:.2f} "
+                    f"({row['filing_date'].date()})"
+                ),
             )
-        st.page_link(page_grand_portfolio, label="Grand Portfolio 전체 보기 →")
+
+    # ── RIGHT: Superinvestor Portfolio Stats ──
+    with right:
+        st.markdown("##### Superinvestor Portfolio Stats")
+
+        c1, c2 = st.columns(2)
+        with c1:
+            st.caption("Top 10 Most Owned Stocks")
+            _bullet_rows(
+                consensus_latest.sort_values("holder_count", ascending=False).head(10),
+                lambda row: f"**{row['name_of_issuer']}** — {int(row['holder_count'])}명 보유",
+            )
+        with c2:
+            st.caption("Top 10 Stocks by %")
+            _bullet_rows(
+                consensus_latest.sort_values("avg_weight_pct", ascending=False).head(10),
+                lambda row: f"**{row['name_of_issuer']}** — 평균 비중 {row['avg_weight_pct']:.2f}%",
+            )
+
+        st.caption("Top Big Bets — 포트폴리오 5%+ 집중 베팅 (2인 이상 보유)")
+        top_bets = bets[bets["holder_count"] >= 2].head(10)
+        _bullet_rows(
+            top_bets,
+            lambda row: (
+                f"**{row['name_of_issuer']}** — {row['max_weight_manager']} "
+                f"최대 비중 {row['max_weight_pct']:.1f}% (보유자 {int(row['holder_count'])}명)"
+            ),
+        )
+
+        st.divider()
+        qtr_label = pd.Timestamp(selected_period).date().isoformat() if selected_period is not None else "N/A"
+        d1, d2 = st.columns(2)
+        with d1:
+            st.caption(f"Top 10 Buys Last Qtr ({qtr_label} 기준)")
+            _bullet_rows(
+                top_buys(changes_1q).sort_values("n_new_buyers", ascending=False).head(10),
+                lambda row: f"**{row['name_of_issuer']}** — 신규 편입 {int(row['n_new_buyers'])}명",
+            )
+        with d2:
+            st.caption("Top 10 Buys Last Qtr by %")
+            _bullet_rows(
+                top_buys(changes_1q).sort_values("avg_weight_change_pct", ascending=False).head(10),
+                lambda row: f"**{row['name_of_issuer']}** — 평균 비중 증가 {row['avg_weight_change_pct']:.2f}%p",
+            )
+
+        e1, e2 = st.columns(2)
+        with e1:
+            st.caption("Top 10 Buys Last 2 Qtrs")
+            _bullet_rows(
+                top_buys(changes_2q).sort_values("n_new_buyers", ascending=False).head(10),
+                lambda row: f"**{row['name_of_issuer']}** — 신규 편입 {int(row['n_new_buyers'])}명",
+            )
+        with e2:
+            st.caption("Top 10 Buys Last 2 Qtrs by %")
+            _bullet_rows(
+                top_buys(changes_2q).sort_values("avg_weight_change_pct", ascending=False).head(10),
+                lambda row: f"**{row['name_of_issuer']}** — 평균 비중 증가 {row['avg_weight_change_pct']:.2f}%p",
+            )
+
+        st.divider()
+        st.caption("5%+ Holdings Near 52-Week Low")
+        big_holdings = bets.head(30)
+        if big_holdings.empty:
+            st.caption("대상 종목이 없습니다.")
+        else:
+            with st.spinner("52주 가격 데이터 조회 중..."):
+                near_low = None
+                try:
+                    bets_tickers = _ticker_map(
+                        dict(zip(big_holdings["cusip"], big_holdings["name_of_issuer"]))
+                    )
+                    resolved = sorted({t for t in bets_tickers.values() if t})
+                    week52 = get_52week_range(resolved, MARKET_DB_PATH)
+                    curr_prices = get_current_prices(resolved, MARKET_DB_PATH)
+
+                    near_low = big_holdings.copy()
+                    near_low["ticker"] = near_low["cusip"].map(bets_tickers)
+                    near_low["현재가"] = near_low["ticker"].map(curr_prices)
+                    near_low["52주최저"] = near_low["ticker"].map(lambda t: week52.get(t, (None, None))[0])
+                    near_low["52주최고"] = near_low["ticker"].map(lambda t: week52.get(t, (None, None))[1])
+                    has_prices = near_low[["현재가", "52주최저", "52주최고"]].notna().all(axis=1)
+                    near_low = near_low[has_prices].copy()
+                    near_low["저점대비%"] = (near_low["현재가"] - near_low["52주최저"]) / near_low["52주최저"] * 100
+                    near_low["고점대비%"] = (near_low["52주최고"] - near_low["현재가"]) / near_low["52주최고"] * 100
+                    near_low = near_low.sort_values("저점대비%").head(10)
+                except Exception as exc:  # third-party API hiccups must not crash the app
+                    st.warning(f"가격 조회 중 오류가 발생했습니다: {exc}")
+            if near_low is None:
+                pass
+            else:
+                _bullet_rows(
+                    near_low,
+                    lambda row: (
+                        f"**{row['name_of_issuer']}** — 현재가 ${row['현재가']:.2f}, "
+                        f"저점 대비 +{row['저점대비%']:.1f}%, 고점 대비 -{row['고점대비%']:.1f}%"
+                    ),
+                )
+
+        st.divider()
+        st.caption(f"Superinvestor Stocks With Most Insider Buys ({INSIDER_LOOKBACK_LABEL})")
+        if insider_df.empty:
+            st.caption("아직 Form 4 데이터를 받아오지 않았습니다 (scripts/build_insider.py 실행 필요).")
+        else:
+            insider_summary = insider_buy_summary(insider_df, min_value_usd=50_000).head(10)
+            _bullet_rows(
+                insider_summary,
+                lambda row: f"**{row['issuer_name']}** — {int(row['n_buys'])}건, 합산 ${row['total_value_usd']:,.0f}",
+            )
 
     st.divider()
     link1, link2 = st.columns(2)
