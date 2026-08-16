@@ -1,0 +1,72 @@
+name: Refresh SEC data
+
+# Fires every 3 hours -- the finest cadence needed (during a 13F filing
+# deadline's 3-day crunch window). scripts/should_refresh.py gates most
+# ticks down to a plain 2x/day cadence the rest of the time; see
+# src/edgar/deadlines.py for the schedule.
+on:
+  schedule:
+    - cron: "0 */3 * * *"
+  workflow_dispatch: {}
+
+permissions:
+  contents: write
+
+jobs:
+  refresh:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Install dependencies
+        run: pip install -r requirements.txt
+
+      - name: Decide whether this tick should run
+        id: gate
+        run: |
+          RESULT=$(python scripts/should_refresh.py)
+          echo "should_run=$RESULT" >> "$GITHUB_OUTPUT"
+
+      # Raw per-filing XML caches (data/raw, data/raw_form4) and the
+      # CUSIP/issuer lookup dbs are gitignored -- persisting them here is
+      # what keeps a "full rebuild" cheap: only genuinely new filings
+      # since the last run hit the network, everything else is a local
+      # disk-cache hit. Without this, every run would re-fetch years of
+      # history from scratch on Actions' clean runner.
+      - name: Restore raw filing cache
+        if: steps.gate.outputs.should_run == 'true'
+        uses: actions/cache@v4
+        with:
+          path: |
+            data/raw
+            data/raw_form4
+            data/issuer_ciks.db
+            data/tickers.db
+          key: edgar-raw-cache-${{ github.run_id }}
+          restore-keys: |
+            edgar-raw-cache-
+
+      - name: Refresh 13F holdings
+        if: steps.gate.outputs.should_run == 'true'
+        run: python -m src.edgar.build
+
+      - name: Refresh Form 4 insider buys
+        if: steps.gate.outputs.should_run == 'true'
+        run: python scripts/build_insider.py
+
+      - name: Refresh recent activity feed
+        if: steps.gate.outputs.should_run == 'true'
+        run: python scripts/build_recent_activity.py
+
+      - name: Commit updated snapshots
+        if: steps.gate.outputs.should_run == 'true'
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add data/holdings.db data/insider.db data/tickers.db data/recent_activity.db
+          git diff --cached --quiet || git commit -m "chore: scheduled SEC data refresh"
+          git push
