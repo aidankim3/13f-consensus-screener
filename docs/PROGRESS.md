@@ -67,6 +67,13 @@
 - 2차 진단 코드 작성(Claude 직접, coverage.py·config.py, 로직 변경 없음, 가짜 QC 시험 통과): 탈락 사유 분포·listing future/conflict·mcap 결측·재무 누락 종목 생존율. QC에서 COVERAGE_CHECK=True로 재실행 필요.
 - 다음: 2차 진단 결과로 GE류 ipo_date 영향 수·재무 누락 규모 확인 → 대처 결정(평가 시작 늦춤 / 재무 없는 종목 포함 / 한계로 기록). 상세: `results/step3/alert-fluorescent-pink-alpaca/REVIEW.md`.
 
+### 커버리지 2차 진단 결과 (Fat Fluorescent Yellow Antelope, 2026-09-26)
+- **생존편향 확정**: 2003→2014 생존율 fund 84%·top900 88% vs no_fund 30%(2007: 87/95/45%, 2011: 94/100/80%). later_fund=0 → 회사 단위로 재무가 통째로 없음. 2014에도 DD·TWX·CBS·SNDK·CHK·BBBY 등 이후 사라진 대형주 재무 없음 → **전 구간 문제**(Alpaca 검토의 "2011·2014 정상"은 정정).
+- **시총 결측**: 재무는 있으나 시총 없는 대표 종목 343~501개(DELL·BRCM·XLNX·EMC·CELG·MON 등 이후 인수된 대형주) → 주식 수 필드로 복구 가능성, 3차 진단 작성.
+- **상장일 오류**: ipo_date가 미래(GE 2015-11, D 2014-06, HLX 2026-09)인 종목 21~29개, 900위 안 크기 6~9개 → 제안: 상장일 = min(ipo_date, SID 최초 거래일).
+- Morningstar만으로 재무 없는 회사는 복구 불가. 결정 대기: (A) 상장일 수정 (B) 시총 대체 계산(3차 진단 후) (C) 생존편향 처리 방침.
+- 상세: `results/step3/fat-fluorescent-yellow-antelope/REVIEW.md`.
+
 ### 3단계 QUICK_TEST 매매 점검 결과 (Baboon, N=60 equal, 2001~2004)
 - 매매 동작 정상: 첫 매매 2003-02-03 MOC 60종목, 주문 233건 전부 MOC·체결, [FILL] ok, neg·rej·delist 0, 로그 4.9KB.
 - [H] 확인: 200자 넘는 [CONFIG]·[SUMMARY] 잘림 없음, runtime statistic 표시됨.

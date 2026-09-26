@@ -202,12 +202,13 @@ changes = pd.read_csv(io.StringIO(qb.object_store.read("program_trading/step1/un
     - 거래대금은 신호일 하루 값이다.
     - `share_class` 탈락은 같은 회사의 다른 주식 종류가 대표로 뽑힌 경우다(예: GOOG 대신 GOOGL).
   - **[M] 확인됨(Alpaca 실행):** `Fundamental.dollar_volume`으로 정상 값이 나왔다. 없으면 가격 × `volume`으로 대신 계산하고, 둘 다 없으면 0으로 센다.
+  - **2차 결과(Antelope, 2026-09-26):** 생존편향 확정(2003→2014 생존율 no_fund 30% vs fund 84%, later_fund=0, 2014에도 누락), 시총 결측 343~501개, ipo_date 미래 값 21~29개. `results/step3/fat-fluorescent-yellow-antelope/REVIEW.md`.
   - **1차 결과(Alpaca, 2026-09-26):** 2003-01·2007-06에 이후 사라진 미국 대형주(AOL·WYE·VIAB·DD·GM·SGP·BGEN·NVLS, APOL·AA)의 재무가 없고, GE는 모든 점검일에 `listing`, DELL은 2003~2011에 `mcap`으로 탈락. 상세는 `results/step3/alert-fluorescent-pink-alpaca/REVIEW.md`.
   - **2차 진단(2026-09-26 추가, 로직 변경 없음):** 점검일마다 줄 4개가 바뀌거나 추가된다.
     - 2줄 교체: `no_fund ex-ETF-list` — 재무 없는 종목에서 `config.COVERAGE_KNOWN_ETFS`(알려진 ETF·HOLDRS)를 뺀 수, 거래대금 $20M·$100M 이상 수, 상위 20개. 목록에 없는 ETF·외국 ADR은 남을 수 있다.
     - `funnel:` — 1단계 탈락 사유 전체 분포(많은 순)와 적격 종목의 시총 구간별 수(≥$10B·$1B·$0.5B·$0.2B).
     - `listing` — 상장 24개월 조건 탈락(ipo_date 경로)을 `future`(ipo_date가 신호일보다 뒤, 현재 시점 값 의심), `conflict`(ipo_date는 24개월 미만이지만 SID 최초 거래일로는 24개월 이상), `recent`(규칙대로)로 나눈 수. `suspect>=cut900` = future·conflict 중 시총이 900위 이상인 수. 시총 상위 6개(`티커:ipo연-월:sid연-월:$시총B`).
-    - `mcap_missing` — 시총이 없거나 0이라 탈락한 수와 거래대금 상위 6개.
+    - `mcap_missing` — 시총이 없거나 0이라 탈락한 수. 3차 진단(2026-09-26 추가): 대체 주식 수 필드(`so`=company_profile.shares_outstanding, `osn`=balance_sheet.ordinary_shares_number, `bas`/`das`=earning_reports.basic/diluted_average_shares)별 값이 있는 수, `any`, 가격 × 첫 번째 있는 필드로 만든 시총이 cut900·$1B 이상인 수, 거래대금 상위 6개(`티커:가격:거래대금:필드:만든 시총`).
   - 끝에 `[COV survival 점검월->마지막 점검월]`: 가격 ≥ $5·거래대금 ≥ $20M인 `fund`(재무 있는 보통주 후보), `top900`(적격 시총 상위 900), `no_fund`(재무 없음, 알려진 ETF 제외)가 마지막 점검일 입력에 남은 비율. `later_fund` = 살아남은 no_fund 중 마지막 점검일에 재무가 있는 수.
     - 해석: no_fund 생존율이 fund보다 크게 낮으면 재무 누락이 이후 사라진 회사에 몰린 것(생존편향). 목록에 없는 ETF·ADR은 생존율을 올리는 쪽이라 이 비교는 보수적이다. later_fund가 크면 회사가 아니라 기간(과거 구간) 누락이다.
   - 로그 크기(가짜 QC 시험 기준 추정): 점검일당 약 0.8KB, 생존율 약 0.4KB 추가 → 전체 약 8~9KB.

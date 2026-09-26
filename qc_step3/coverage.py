@@ -20,6 +20,33 @@ def dollar_volume(f):
     return 0.0
 
 
+# 시총 결측 종목의 대체 주식 수 후보(3차 진단). (약어, 필드 경로). 값이 여러 기간이면 3개월 → 기본값 → 12개월 순
+SHARE_FIELDS = (
+    ("so", ("company_profile", "shares_outstanding")),
+    ("osn", ("financial_statements", "balance_sheet", "ordinary_shares_number")),
+    ("bas", ("earning_reports", "basic_average_shares")),
+    ("das", ("earning_reports", "diluted_average_shares")),
+)
+
+
+def share_count(f, path):
+    """필드 경로의 주식 수(양수만). 없거나 NaN·0이면 0."""
+    value = f
+    try:
+        for name in path:
+            value = getattr(value, name)
+    except AttributeError:
+        return 0.0
+    for period in ("three_months", "value", "twelve_months", None):
+        try:
+            number = float(getattr(value, period) if period else value)
+        except (AttributeError, TypeError, ValueError):
+            continue
+        if number > 0:          # NaN은 False
+            return number
+    return 0.0
+
+
 def month_text(day):
     return f"{day.year}-{day.month:02d}" if day else "none"
 
@@ -27,7 +54,7 @@ def month_text(day):
 class CoverageCheck:
     """점검일(COVERAGE_MONTHS의 신호일)마다: 입력·재무 있음·1단계 적격 수, 재무 없는 종목의 거래대금 분포·상위 목록,
     알려진 대형주 목록의 입력 여부·재무 여부·적격 여부(탈락 사유)·적격 중 시총 순위,
-    탈락 사유 분포·적격 시총 분포, 상장일 모순(listing), 시총 결측(mcap). 끝에 재무 누락 종목의 생존율."""
+    탈락 사유 분포·적격 시총 분포, 상장일 모순(listing), 시총 결측(mcap)과 대체 주식 수. 끝에 재무 누락 종목의 생존율."""
 
     def __init__(self, algo, recorder):
         self.algo, self.recorder = algo, recorder
@@ -145,9 +172,29 @@ class CoverageCheck:
                        for m, f, ipo, sid in suspect[:COVERAGE_DETAIL_TOP_N])
         self.algo.log(f"{tag} listing future={counts['future']} conflict={counts['conflict']} recent={counts['recent']} "
                       f"suspect>=cut{ENTRY_RANK}={enter} top: {top or 'none'}")
-        mcap_missing.sort(key=lambda x: (-x[0], str(x[1].symbol.id)))
-        top = " ".join(f"{f.symbol.value}:${f.price:.0f}:{v / 1e6:.0f}M" for v, f in mcap_missing[:COVERAGE_DETAIL_TOP_N])
-        self.algo.log(f"{tag} mcap_missing={len(mcap_missing)} top(dv): {top or 'none'}")
+        self._log_mcap_missing(tag, mcap_missing, cut)
+
+    def _log_mcap_missing(self, tag, mcap_missing, cut):
+        """시총 결측(mcap) 탈락 종목: 대체 주식 수 필드별 있는 수, 가격 × 주식 수(첫 번째 있는 필드)로 만든
+        시총이 cut900·$1B 이상인 수, 거래대금 상위(티커:가격:거래대금:쓴 필드:만든 시총)."""
+        counts = {name: 0 for name, _ in SHARE_FIELDS}
+        implied = []
+        for v, f in mcap_missing:
+            first = None
+            for name, path in SHARE_FIELDS:
+                shares = share_count(f, path)
+                if shares > 0:
+                    counts[name] += 1
+                    first = first or (name, shares)
+            implied.append((v, f, first[0] if first else "none", f.price * first[1] if first else 0.0))
+        implied.sort(key=lambda x: (-x[0], str(x[1].symbol.id)))
+        fields = " ".join(f"{name}={n}" for name, n in counts.items())
+        any_field = sum(field != "none" for _, _, field, _ in implied)
+        big = sum(m >= cut for _, _, _, m in implied if m > 0) if cut > 0 else any_field
+        top = " ".join(f"{f.symbol.value}:${f.price:.0f}:{v / 1e6:.0f}M:{field}:${m / 1e9:.1f}B"
+                       for v, f, field, m in implied[:COVERAGE_DETAIL_TOP_N])
+        self.algo.log(f"{tag} mcap_missing={len(mcap_missing)} fields: {fields} any={any_field} | implied "
+                      f">=cut{ENTRY_RANK}:{big} >=$1B:{sum(m >= 1e9 for _, _, _, m in implied)} top(dv): {top or 'none'}")
 
     def _store_cohorts(self, signal_date, records, screen, ranked, dv):
         """생존율 비교 집단(가격 ≥ $5, 거래대금 ≥ COVERAGE_SURVIVAL_DV):
