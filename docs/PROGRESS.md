@@ -64,7 +64,8 @@
 - DELL: 2003~2011 `mcap` 탈락(시총 없음).
 - cut900: 2003 $0.02B(적격 911), 2007 $0.36B, 2011 $0.40B, 2014 $0.82B. NOTES의 2003 $0.19B 기록과 다름 → 확인 필요.
 - [M] dollar_volume 확인됨.
-- 다음: GE류 ipo_date 영향 수·재무 누락 규모 진단 → 대처 결정(평가 시작 늦춤 / 재무 없는 종목 포함 / 한계로 기록). 상세: `results/step3/alert-fluorescent-pink-alpaca/REVIEW.md`.
+- 2차 진단 코드 작성(Claude 직접, coverage.py·config.py, 로직 변경 없음, 가짜 QC 시험 통과): 탈락 사유 분포·listing future/conflict·mcap 결측·재무 누락 종목 생존율. QC에서 COVERAGE_CHECK=True로 재실행 필요.
+- 다음: 2차 진단 결과로 GE류 ipo_date 영향 수·재무 누락 규모 확인 → 대처 결정(평가 시작 늦춤 / 재무 없는 종목 포함 / 한계로 기록). 상세: `results/step3/alert-fluorescent-pink-alpaca/REVIEW.md`.
 
 ### 3단계 QUICK_TEST 매매 점검 결과 (Baboon, N=60 equal, 2001~2004)
 - 매매 동작 정상: 첫 매매 2003-02-03 MOC 60종목, 주문 233건 전부 MOC·체결, [FILL] ok, neg·rej·delist 0, 로그 4.9KB.

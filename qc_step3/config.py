@@ -25,6 +25,22 @@ COVERAGE_TICKERS = ("AAPL", "MSFT", "INTC", "CSCO", "ORCL", "IBM", "HPQ", "DELL"
                     "JNJ", "PFE", "MRK", "XOM", "CVX", "GE", "BA", "CAT", "MMM", "T", "VZ", "AMZN", "GOOG", "DIS",
                     "MCD", "NKE", "UNH")  # 알려진 대형주 점검 목록(표시용 티커)
 COVERAGE_TICKER_FROM = {"GOOG": (2004, 8)}  # 이 (연, 월) 이후 점검일에만 확인(상장 전 제외)
+# 커버리지 진단 2차(2026-09-26, Alpaca 결과 후): 탈락 사유 분포·상장일 모순·시총 결측·재무 누락 종목의 생존율
+COVERAGE_DETAIL_TOP_N = 6                 # 상장일 모순·시총 결측 종목 표시 수
+COVERAGE_SURVIVAL_DV = 20e6               # 생존율 비교 대상: 가격 ≥ $5이고 신호일 거래대금 ≥ 이 값
+COVERAGE_MCAP_LEVELS = (10e9, 1e9, 0.5e9, 0.2e9)   # 적격 종목 시총 분포 구간
+# 재무 없는 종목 중 ETF(재무 자료가 없어 구분 불가)를 걸러내는 알려진 ETF·HOLDRS 목록. 완전하지 않음(표시용)
+COVERAGE_KNOWN_ETFS = frozenset((
+    "SPY IVV VOO VTI RSP MDY IJH IJR IWM IWB IWD IWF IWN IWO IWR IWS IWP IWV DIA QQQ QQQQ ONEQ "
+    "XLB XLE XLF XLI XLK XLP XLU XLV XLY IYR IYF IYM IYT IYW IYE IYH IYZ IBB XBI SMH SOXX KRE KBE XHB XRT XME XOP "
+    "ITB OIH BBH HHH RTH PPH UTH TTH IAH SWH BDH WMH TBH EKH MKH IIH SMH RKH MDY GDX GDXJ SIL "
+    "EFA EEM VWO VEA VGK IEMG EZU EWJ EWZ EWT EWY EWG EWH EWC EWA EWW EWU EWS EWM FXI RSX ILF "
+    "GLD SLV USO UNG DBC DBA DBO UUP FXE FXY FXA FXC FXB "
+    "TLT IEF SHY AGG BND LQD HYG JNK TIP EMB MUB SHV BIL "
+    "SSO SDS QLD QID DDM DXD MVV MZZ UWM TWM UYG SKF URE SRS DIG DUG ROM REW USD SSG "
+    "UPRO SPXU SPXL SPXS TQQQ SQQQ TNA TZA FAS FAZ ERX ERY TMF TMV TBT UCO SCO AGQ ZSL UGL GLL NUGT DUST "
+    "VXX VIXY UVXY SVXY XIV TVIX VXZ "
+    "SH PSQ DOG RWM EUM EFZ").split())
 # 사용자 결정(수익률과 무관, 2026-09-26): 1998~2002는 Morningstar 커버리지 때문에 적격 종목이 900개 미만이라 유니버스가
 # '적격 전체'가 되어 소형·저유동 종목이 섞인다(계획서 6장 대형주 유니버스 전제 불성립). 평가는 이 달 신호일부터 시작하고,
 # 그 이전 신호일은 유니버스·z만 계산하고 주문하지 않는다(현금). 1999~2002 결과는 '데이터 한계 구간'으로만 참고
