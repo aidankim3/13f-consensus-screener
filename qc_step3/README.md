@@ -1,10 +1,7 @@
 # 3단계 — 포트폴리오 구성·매매 (진행 중)
 QC에 올리는 파일 8개: `main.py`, `config.py`, `universe.py`, `factors.py`, `portfolio.py`, `diagnostics.py`, `report.py`, `coverage.py`
 
-| 파일 | 저장소 |
-|---|---|
-| main.py, config.py, coverage.py, diagnostics.py, factors.py | 있음 (2026-09-26 버전) |
-| universe.py, portfolio.py, report.py, NOTES.md | **아직 없음** → 로컬 `Program Trading/claude/qc_step3/`에서 추가 필요 |
+8개 모두 이 폴더에 있음 (2026-09-26 버전). 파일별 역할·의존 방향·확인 항목은 [`NOTES.md`](NOTES.md) 참고.
 
 ## 주의
 - `coverage.py`는 점검 모드를 쓰지 않아도 필요 (main.py가 import)
