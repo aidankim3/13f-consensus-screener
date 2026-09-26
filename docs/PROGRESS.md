@@ -55,7 +55,16 @@
   | 2줄: 재무 없는 종목 거래대금 상위 20 | SPY·QQQ 등 ETF뿐 | 일반 대형 기업 티커 |
   | 3~4줄: 대형주 30개 상태 | 대부분 #순위(한두 자리) | no_fund·missing 여럿 |
   - 거래대금이 전부 0이면 거래대금 필드 없음 → 별도 보고.
-- 상태: 백테스트 "Crying Fluorescent Yellow Baboon"은 **점검 모드가 아니라 QUICK_TEST 매매 점검(N=60, equal)으로 실행됨**(`[COV]` 없음, quick_test=True). QC config.py 저장 누락 추정 → **커버리지 점검 재실행 필요**. 검토: `results/step3/crying-fluorescent-yellow-baboon/REVIEW.md`.
+- 상태: 백테스트 "Crying Fluorescent Yellow Baboon"은 **점검 모드가 아니라 QUICK_TEST 매매 점검(N=60, equal)으로 실행됨**(`[COV]` 없음, quick_test=True). QC config.py 저장 누락 추정 → 커버리지 점검은 이후 Alpaca로 재실행 완료(아래). 검토: `results/step3/crying-fluorescent-yellow-baboon/REVIEW.md`.
+
+### 커버리지 점검 결과 (Alert Fluorescent Pink Alpaca, 2026-09-26) — 문제 발견
+- 2003-01: 재무 없는 거래대금 상위 20 중 일반 기업 16개. 미국 비금융 대형주 AOL·WYE·VIAB·DD·GM·SGP·BGEN·NVLS 재무 없음. 2007-06: APOL·GM·AA.
+  - 공통점: 이후 합병·파산·비상장화로 사라진 회사 → **생존편향 의심**. 2011·2014는 ETF·ADR뿐으로 정상.
+- GE: 4개 점검일 모두 `listing` 탈락 → Morningstar ipo_date가 현재 시점 값(미래 날짜)으로 추정.
+- DELL: 2003~2011 `mcap` 탈락(시총 없음).
+- cut900: 2003 $0.02B(적격 911), 2007 $0.36B, 2011 $0.40B, 2014 $0.82B. NOTES의 2003 $0.19B 기록과 다름 → 확인 필요.
+- [M] dollar_volume 확인됨.
+- 다음: GE류 ipo_date 영향 수·재무 누락 규모 진단 → 대처 결정(평가 시작 늦춤 / 재무 없는 종목 포함 / 한계로 기록). 상세: `results/step3/alert-fluorescent-pink-alpaca/REVIEW.md`.
 
 ### 3단계 QUICK_TEST 매매 점검 결과 (Baboon, N=60 equal, 2001~2004)
 - 매매 동작 정상: 첫 매매 2003-02-03 MOC 60종목, 주문 233건 전부 MOC·체결, [FILL] ok, neg·rej·delist 0, 로그 4.9KB.
