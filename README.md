@@ -1,7 +1,7 @@
 # 미국 주식 멀티팩터 프로그램 매매
 
 QuantConnect(LEAN)에서 미국 대형주를 대상으로 **모멘텀·퀄리티·가치** 멀티팩터 전략을 단계별로 만들고 검증하는 저장소입니다.
-기준 문서는 `docs/plan_v4.3.md`(추가 예정), 진행 기록은 [`docs/PROGRESS.md`](docs/PROGRESS.md)입니다.
+기준 문서는 [`docs/plan_v4.3.md`](docs/plan_v4.3.md), 진행 기록은 [`docs/PROGRESS.md`](docs/PROGRESS.md)입니다.
 
 ## 전략 요약
 - **유니버스**: 매월 마지막 거래일 기준 시가총액 상위 약 1,000종목(금융·부동산 제외, 상장폐지 종목 포함으로 생존편향 제거)

@@ -34,7 +34,7 @@
 - 관찰: key_log(log+debug) 줄이 로그에 두 번 찍힘 → 3단계에서 debug만 쓰도록 수정.
 - 실행 시간 3,370초(데이터 9,100만 건) → 3단계에서 단축 조치.
 
-## 3단계 구성·매매 — 프롬프트 전달, 익스텐션 구현 대기
+## 3단계 구성·매매 — 구현 완료, QC 점검 중
 - 사용자 결정(결과 보기 전 동결): N=40·60·80 모두, 가중 equal·invvol, 정수 주만, 비용은 3단계=IB 수수료만, 스프레드·저/기본/고 시나리오는 4단계.
 - 규칙: 상위 40% 유지 / 상위 20%에서 편입, 유니버스 이탈·점수 결측 보유 종목 매도, 빈자리는 현금, 5% 상한, $200 미만 조정 생략, 다음 거래일 MOC, 수량은 신호일 정보로 계산, 레버리지 없음, 현금 버퍼 1%.
 - 파라미터: QC 프로젝트 파라미터 n_holdings·weighting(기본 60·equal).
@@ -55,7 +55,13 @@
   | 2줄: 재무 없는 종목 거래대금 상위 20 | SPY·QQQ 등 ETF뿐 | 일반 대형 기업 티커 |
   | 3~4줄: 대형주 30개 상태 | 대부분 #순위(한두 자리) | no_fund·missing 여럿 |
   - 거래대금이 전부 0이면 거래대금 필드 없음 → 별도 보고.
-- 상태: 실행 완료(백테스트 "Crying Fluorescent Yellow Baboon", logs.txt·orders.csv·trades.csv·json 생성). **결과 검토 전 주간 한도로 중단** → `results/`에 파일 올린 뒤 검토.
+- 상태: 백테스트 "Crying Fluorescent Yellow Baboon"은 **점검 모드가 아니라 QUICK_TEST 매매 점검(N=60, equal)으로 실행됨**(`[COV]` 없음, quick_test=True). QC config.py 저장 누락 추정 → **커버리지 점검 재실행 필요**. 검토: `results/step3/crying-fluorescent-yellow-baboon/REVIEW.md`.
+
+### 3단계 QUICK_TEST 매매 점검 결과 (Baboon, N=60 equal, 2001~2004)
+- 매매 동작 정상: 첫 매매 2003-02-03 MOC 60종목, 주문 233건 전부 MOC·체결, [FILL] ok, neg·rej·delist 0, 로그 4.9KB.
+- [H] 확인: 200자 넘는 [CONFIG]·[SUMMARY] 잘림 없음, runtime statistic 표시됨.
+- [REBAL] #1 지문 uni=099d1ab6 zt=116c2e96 → 전체 기간 실행과 비교.
+- 관찰: 보유 종목이 소형주 위주(capacity $70k) → 커버리지 문제 가능성. cash_avg 7.1%(정수 주 + $200 생략) → 4단계·운용 예산 때 검토.
 
 ## 이후 단계(예정)
 - 4단계: 스프레드(Corwin–Schultz 등, 직전 21거래일 추정)·슬리피지, 저/기본/고 비용 시나리오.
