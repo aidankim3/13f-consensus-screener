@@ -104,13 +104,15 @@ def stock_reason(f, signal_date):
 
 def listing_info(f):
     """상장일 판정 경로(계획서 6장 '상장 24개월 이상', 사용자 결정 2026-09-26). NOTES.md [C][G].
-      "ipo"       : Morningstar IPO 날짜가 있으면 그날부터 24개월을 센다.
-      "presample" : IPO 날짜가 없고 LEAN 최초 거래일(SID 날짜)이 데이터 시작일이면 데이터 시작 전부터 상장으로 보고 통과.
-      "sid"       : IPO 날짜가 없고 최초 거래일이 데이터 시작일보다 뒤면 그날부터 24개월을 센다."""
+      "ipo"       : Morningstar IPO 날짜가 있고 LEAN 최초 거래일(SID 날짜)보다 늦지 않으면 그날부터 24개월을 센다.
+      "presample" : IPO 날짜가 없거나 믿을 수 없고, 최초 거래일이 데이터 시작일이면 데이터 시작 전부터 상장으로 보고 통과.
+      "sid"       : IPO 날짜가 없거나 믿을 수 없고, 최초 거래일이 데이터 시작일보다 뒤면 그날부터 24개월을 센다.
+    IPO 날짜가 최초 거래일보다 뒤면 믿지 않는다(사용자 결정 2026-09-26, 커버리지 점검: GE ipo 2015-11·HLX 2026-09 등
+    현재 시점 값으로 덮어써진 날짜). 결과적으로 상장일 = min(IPO 날짜, 최초 거래일)."""
     ipo = to_date(f.security_reference.ipo_date)
-    if ipo is not None:
-        return "ipo", ipo
     first_trade = to_date(f.symbol.id.date)
+    if ipo is not None and (first_trade is None or ipo <= first_trade):
+        return "ipo", ipo
     if first_trade is not None and first_trade <= LEAN_DATA_START:
         return "presample", first_trade
     return "sid", first_trade

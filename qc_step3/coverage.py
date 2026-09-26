@@ -147,10 +147,22 @@ class CoverageCheck:
         시총 결측(mcap) 탈락은 거래대금 상위를 보인다."""
         counts = {"future": 0, "conflict": 0, "recent": 0}
         suspect, mcap_missing = [], []
+        ipo_ignored = ipo_ignored_ok = 0
+        ratios = {name: [] for name, _ in SHARE_FIELDS}
         for f, _ in screen.candidates:
             if f.symbol not in representatives:
                 continue
             reason = stock_reason(f, signal_date)[0]
+            ipo_raw = to_date(f.security_reference.ipo_date)
+            sid_date = to_date(f.symbol.id.date)
+            if ipo_raw is not None and sid_date is not None and ipo_raw > sid_date:
+                ipo_ignored += 1                     # universe.listing_info가 IPO 날짜를 믿지 않은 경우
+                ipo_ignored_ok += reason is None
+            if reason is None and f.market_cap and f.market_cap > 0:
+                for name, path in SHARE_FIELDS:      # 대체 시총 검증: 가격 × 주식 수 / Morningstar 시총
+                    shares = share_count(f, path)
+                    if shares > 0:
+                        ratios[name].append(f.price * shares / float(f.market_cap))
             if reason == "mcap":
                 mcap_missing.append((dv.get(f.symbol, 0.0), f))
             if reason != "listing":
@@ -170,8 +182,19 @@ class CoverageCheck:
         enter = sum(m >= cut for m, _, _, _ in suspect) if cut > 0 else len(suspect)
         top = " ".join(f"{f.symbol.value}:ipo{month_text(ipo)}:sid{month_text(sid)}:${m / 1e9:.1f}B"
                        for m, f, ipo, sid in suspect[:COVERAGE_DETAIL_TOP_N])
-        self.algo.log(f"{tag} listing future={counts['future']} conflict={counts['conflict']} recent={counts['recent']} "
-                      f"suspect>=cut{ENTRY_RANK}={enter} top: {top or 'none'}")
+        self.algo.log(f"{tag} listing ipo_ignored={ipo_ignored}(eligible_now={ipo_ignored_ok}) future={counts['future']} "
+                      f"conflict={counts['conflict']} recent={counts['recent']} suspect>=cut{ENTRY_RANK}={enter} "
+                      f"top: {top or 'none'}")
+        checks = []
+        for name, values in ratios.items():
+            values.sort()
+            if values:
+                median = values[len(values) // 2]
+                close = 100.0 * sum(0.9 <= v <= 1.1 for v in values) / len(values)
+                checks.append(f"{name} n={len(values)} med={median:.2f} in10%={close:.0f}%")
+            else:
+                checks.append(f"{name} n=0")
+        self.algo.log(f"{tag} share_check(eligible, price*shares/mcap): {' | '.join(checks)}")
         self._log_mcap_missing(tag, mcap_missing, cut)
 
     def _log_mcap_missing(self, tag, mcap_missing, cut):

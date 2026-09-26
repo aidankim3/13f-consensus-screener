@@ -72,6 +72,8 @@
 - **시총 결측**: 재무는 있으나 시총 없는 대표 종목 343~501개(DELL·BRCM·XLNX·EMC·CELG·MON 등 이후 인수된 대형주) → 주식 수 필드로 복구 가능성, 3차 진단 작성.
 - **상장일 오류**: ipo_date가 미래(GE 2015-11, D 2014-06, HLX 2026-09)인 종목 21~29개, 900위 안 크기 6~9개 → 제안: 상장일 = min(ipo_date, SID 최초 거래일).
 - Morningstar만으로 재무 없는 회사는 복구 불가. 결정 대기: (A) 상장일 수정 (B) 시총 대체 계산(3차 진단 후) (C) 생존편향 처리 방침.
+- 2026-09-26 **(A) 상장일 수정 적용**(사용자 결정): 상장일 = min(ipo_date, SID 최초 거래일). universe.py 수정 → 유니버스·[REBAL] 지문이 바뀜.
+- Smooth Light Brown Bear 실행은 새 coverage.py가 반영되지 않아 Antelope와 동일(3차 진단 미실행). 3차 진단에 대체 시총 검증 줄(share_check) 추가.
 - 상세: `results/step3/fat-fluorescent-yellow-antelope/REVIEW.md`.
 
 ### 3단계 QUICK_TEST 매매 점검 결과 (Baboon, N=60 equal, 2001~2004)

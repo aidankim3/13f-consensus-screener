@@ -188,6 +188,10 @@ changes = pd.read_csv(io.StringIO(qb.object_store.read("program_trading/step1/un
   - 이유: 1단계 결과상 2003년 전에는 유니버스가 900 미만(=적격 전체)이라 완충 경로가 시작일과 무관하다. 재무 스냅샷은 4개 분기와 1년 전 총자산에 약 12~15개월이면 충분하다.
   - 대조(처음부터 적격 ≥ 900)에서도 가짜 데이터에서는 2003-01 차이가 0이었다. 다만 실제 데이터 보장은 아니다.
   - QC에서 확인: 빠른 실행과 전체 실행의 `[REBAL] #1 … uni=… zt=…`가 같아야 한다.
+- **상장일 판정 수정(사용자 결정 2026-09-26, 계획서 6장 '상장 24개월' 규칙은 그대로):**
+  - 관측(커버리지 2차 진단): Morningstar `ipo_date`가 현재 시점 값으로 덮어써진 종목이 점검일마다 21~29개(GE 2015-11, D 2014-06, HLX 2026-09, ACM 2014-10 등). 그중 900위 안 크기가 6~9개였고, GE는 전 구간에서 `listing`으로 빠졌다.
+  - 변경: `universe.listing_info`에서 IPO 날짜가 LEAN 최초 거래일(SID 날짜)보다 뒤면 믿지 않고 SID 경로(presample·sid)로 판정한다. 결과적으로 상장일 = min(IPO 날짜, 최초 거래일).
+  - 영향: 유니버스가 바뀌므로 이전 실행(Baboon·Zebra)의 `[REBAL] #1` 지문(uni=099d1ab6 zt=116c2e96)과는 달라진다. 커버리지 점검의 `listing ipo_ignored=N(eligible_now=M)`으로 되살아난 종목 수를 확인한다.
 - **데이터 커버리지 점검 모드(`COVERAGE_CHECK`, 전략 로직과 무관):**
   - 목적: 적격 종목이 2003년 약 1,100개·2015년 약 1,400개이고, 900위 시총(cut900)이 2003년 $0.19B·2015년 $0.90B로 작다. QC Morningstar 데이터에서 과거 종목(특히 대형주)이 빠졌는지, 빠졌다면 어떤 종목인지 확인하려는 것이다.
   - 사용법: `config.COVERAGE_CHECK = True`로 바꿔 실행한다. 실행 구간은 2002-12-01~2015-01-31이고 QUICK_TEST보다 우선한다. 끝나면 False로 되돌린다.
@@ -207,7 +211,8 @@ changes = pd.read_csv(io.StringIO(qb.object_store.read("program_trading/step1/un
   - **2차 진단(2026-09-26 추가, 로직 변경 없음):** 점검일마다 줄 4개가 바뀌거나 추가된다.
     - 2줄 교체: `no_fund ex-ETF-list` — 재무 없는 종목에서 `config.COVERAGE_KNOWN_ETFS`(알려진 ETF·HOLDRS)를 뺀 수, 거래대금 $20M·$100M 이상 수, 상위 20개. 목록에 없는 ETF·외국 ADR은 남을 수 있다.
     - `funnel:` — 1단계 탈락 사유 전체 분포(많은 순)와 적격 종목의 시총 구간별 수(≥$10B·$1B·$0.5B·$0.2B).
-    - `listing` — 상장 24개월 조건 탈락(ipo_date 경로)을 `future`(ipo_date가 신호일보다 뒤, 현재 시점 값 의심), `conflict`(ipo_date는 24개월 미만이지만 SID 최초 거래일로는 24개월 이상), `recent`(규칙대로)로 나눈 수. `suspect>=cut900` = future·conflict 중 시총이 900위 이상인 수. 시총 상위 6개(`티커:ipo연-월:sid연-월:$시총B`).
+    - `listing` — `ipo_ignored`(IPO 날짜가 최초 거래일보다 뒤라 무시한 대표 종목 수, 그중 지금 적격인 수)와, 상장 24개월 조건 탈락(ipo_date 경로)을 `future`(ipo_date가 신호일보다 뒤, 현재 시점 값 의심), `conflict`(ipo_date는 24개월 미만이지만 SID 최초 거래일로는 24개월 이상), `recent`(규칙대로)로 나눈 수. `suspect>=cut900` = future·conflict 중 시총이 900위 이상인 수. 시총 상위 6개(`티커:ipo연-월:sid연-월:$시총B`).
+    - `share_check` — 대체 시총 검증: 시총이 있는 적격 종목에서 가격 × 주식 수 필드별 / Morningstar 시총의 중앙값과 ±10% 안 비율. 1.00 근처·90% 이상이면 그 필드로 시총을 대신 계산해도 된다.
     - `mcap_missing` — 시총이 없거나 0이라 탈락한 수. 3차 진단(2026-09-26 추가): 대체 주식 수 필드(`so`=company_profile.shares_outstanding, `osn`=balance_sheet.ordinary_shares_number, `bas`/`das`=earning_reports.basic/diluted_average_shares)별 값이 있는 수, `any`, 가격 × 첫 번째 있는 필드로 만든 시총이 cut900·$1B 이상인 수, 거래대금 상위 6개(`티커:가격:거래대금:필드:만든 시총`).
   - 끝에 `[COV survival 점검월->마지막 점검월]`: 가격 ≥ $5·거래대금 ≥ $20M인 `fund`(재무 있는 보통주 후보), `top900`(적격 시총 상위 900), `no_fund`(재무 없음, 알려진 ETF 제외)가 마지막 점검일 입력에 남은 비율. `later_fund` = 살아남은 no_fund 중 마지막 점검일에 재무가 있는 수.
     - 해석: no_fund 생존율이 fund보다 크게 낮으면 재무 누락이 이후 사라진 회사에 몰린 것(생존편향). 목록에 없는 ETF·ADR은 생존율을 올리는 쪽이라 이 비교는 보수적이다. later_fund가 크면 회사가 아니라 기간(과거 구간) 누락이다.
