@@ -83,6 +83,12 @@
 - 평가 시작 시점(현재 2003-01) 재검토: rank_check의 with_fill cut900·시총 구간을 보고 결정.
 - 상세: `results/step3/dancing-blue-cat/REVIEW.md`.
 
+### 3단계 전체 기간 N=40 invvol (Crawling Fluorescent Pink Donkey, 2026-09-27) — 정상(관찰 1건)
+- 지문 동일, 보유 39.1~40.0, 1,908건 전부 체결, delist 3 = 자동 청산 3, rej·late 0, 5% 상한 연 0~29회 작동.
+- **관찰**: 2003-07 현금 음수 22일(최대 −$25, 노출 1.001). 신호일 가격으로 수량을 정하고 체결일 가격이 달라 생긴 것(규칙대로), IB 마진 계좌라 거부 안 됨. 기록만 함. 실거래 현금 계좌면 거부 가능 → Stage 0 브로커/4단계에서 검토.
+- 참고 성과(판단 금지): CAGR +11.7%, 변동성 20.9%, MDD −50.7%.
+- 남은 조합: 80/equal, 80/invvol. 상세: `results/step3/crawling-fluorescent-pink-donkey/REVIEW.md`.
+
 ### 3단계 전체 기간 N=40 equal (Determined Magenta Salamander, 2026-09-27) — 정상
 - 지문 동일, 보유 39.1~40.0, 1,745건 전부 체결, delist 3 = 자동 청산 3, neg·rej·late·cap 0, 현금 3.6%.
 - 참고 성과(판단 금지): CAGR +12.0%, 변동성 22.8%, MDD −54.8%.
