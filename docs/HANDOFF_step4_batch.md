@@ -1,5 +1,7 @@
 # 새 세션용 지시문 — 4단계 12개 조합 자동 실행
 
+> **2026-09-27 확인: QuantConnect API 토큰은 유료 조직(paid organization)에서만 발급됨 → 무료 계정에서는 이 방법을 쓸 수 없음.** 유료로 바꾸면 사용 가능.
+
 (전제: 환경에서 `www.quantconnect.com` 네트워크 허용, 환경 변수 `QC_USER_ID`·`QC_API_TOKEN` 설정)
 
 아래를 새 세션 첫 메시지로 붙여 넣기:
