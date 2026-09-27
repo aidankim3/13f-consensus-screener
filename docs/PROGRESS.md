@@ -83,6 +83,14 @@
 - 평가 시작 시점(현재 2003-01) 재검토: rank_check의 with_fill cut900·시총 구간을 보고 결정.
 - 상세: `results/step3/dancing-blue-cat/REVIEW.md`.
 
+### 3단계 전체 기간 N=60 equal (Crawling Green Chicken, 2026-09-27) — 정상
+- [REBAL] #1 지문이 짧은 실행과 동일(uni=f1a94f20 zt=5ed62ed9), 2003~2004 결과 완전히 같음 → 짧은 실행으로 점검한 결과가 전체 실행에 그대로 이어짐.
+- 2,277건 전부 체결, neg·rej·late 0, 보유 58.9~60.0, 회전율 평균 0.95, 수수료 0.31%, 현금 4.6%, 3,732초.
+- **수정**: delist 집계가 0인데 LEAN 자동 청산 5건 → main.on_order_event에서 'delisting' 태그 체결로 세도록 변경(로그 전용).
+- 참고 성과(판단 금지): CAGR +13.8%, MDD −52.1% / SPY +9.1%, −55.2%.
+- 다음: 수정한 main.py 반영 → 나머지 5개 조합(N=40·60·80 × equal·invvol 중 60/equal 제외) 전체 기간.
+- 상세: `results/step3/crawling-green-chicken/REVIEW.md`.
+
 ### 평가 시작 결정 + 상장일 수정 후 QUICK_TEST (Ugly Tan Shark, 2026-09-27)
 - **결정(2026-09-27)**: 평가 시작 2003-01 신호일 유지(원래 기준 '적격 ≥ 900'을 2003부터 만족, 데이터 보고 옮기지 않음). 소형주 비중 문제는 2011년 이후 확인 분석으로 점검.
 - QUICK_TEST(N=60 equal) 정상: 244건 전부 MOC 체결, [FILL] ok, neg·rej·delist 0, [START] eligible 907(≥900), short_months 5→1.

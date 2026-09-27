@@ -212,18 +212,17 @@ class ProgramTradingPortfolioStep3(QCAlgorithm):
         if status in (OrderStatus.FILLED, OrderStatus.PARTIALLY_FILLED):
             self._report.record_fill(order_event, float(self.portfolio.total_portfolio_value))
             symbol = order_event.symbol
+            # LEAN 상장폐지 자동 청산은 on_data보다 먼저 체결돼 보유 목록에서 빠지므로 여기서 센다(2026-09-27, 전체 실행에서
+            # 'Liquidate from delisting' 5건인데 delist=0이던 문제). on_data 쪽 집계는 중복되지 않게 없앴다.
+            order = self.transactions.get_order_by_id(order_event.order_id)
+            if status == OrderStatus.FILLED and order is not None and "delisting" in str(order.tag).lower():
+                self._report.record_delisting()
             if int(self.portfolio[symbol].quantity):
                 self._held.add(symbol)
             else:
                 self._held.discard(symbol)
         elif status in (OrderStatus.CANCELED, OrderStatus.INVALID):
             self._report.record_unfilled()
-
-    def on_data(self, data):
-        """보유 종목의 상장폐지 이벤트를 센다. 청산은 LEAN 처리 그대로(못 판 금액을 다른 종목으로 옮기지 않음, 계획서 5장)."""
-        for delisting in data.delistings.values():
-            if delisting.type == DelistingType.DELISTED and delisting.symbol in self._held:
-                self._report.record_delisting()
 
     def on_end_of_algorithm(self):
         """마지막 [PYEAR] → [PERF](첫 매매 이후 성과) → [SUMMARY]. 마지막 가치 기준일 = 가장 최근 종가일."""

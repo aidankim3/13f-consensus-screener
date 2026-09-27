@@ -165,7 +165,7 @@ changes = pd.read_csv(io.StringIO(qb.object_store.read("program_trading/step1/un
   - 새로 구독한 종목의 가격: `FuncSecuritySeeder(self.get_last_known_prices)`로 시드한다. 시드가 안 되면 가격 0으로 주문이 거절될 수 있다(`rej`).
   - 주문 검증 한도: 같은 시각 대기 중인 매도 대금을 LEAN 매수력 검증이 반영하는지 확인하지 못해 한도를 2배로 두었다. `rej`가 0이고 `neg`가 0이면 문제가 없다.
   - 유니버스에서 빠진 보유 종목: 선택 함수가 보유 종목을 항상 반환하므로 보유 중에 구독이 끊기지 않는다. 보유 중인 종목은 LEAN이 유니버스에서 제거하지 않는 것으로 안다.
-  - 상장폐지: LEAN이 상장폐지일에 보유분을 자동 청산하는 것으로 알고 있다. `on_data`의 `data.delistings`(`DelistingType.DELISTED`)로 보유 종목 이벤트를 센다(`delist`).
+  - 상장폐지: LEAN이 상장폐지일에 보유분을 자동 청산한다(주문 태그 'Liquidate from delisting'). 처음에는 `on_data`의 `DelistingType.DELISTED`로 셌으나, 자동 청산 체결이 먼저 처리돼 보유 목록에서 빠진 뒤라 전체 실행(Crawling Green Chicken)에서 5건을 0으로 셌다. 2026-09-27부터 `on_order_event`에서 태그에 'delisting'이 있는 체결을 센다(`delist`).
   - RAW 구독에서 배당 현금 입금·분할 수량 조정은 LEAN이 처리하는 것으로 안다.
   - `get_parameter(이름, 기본값)`·`set_runtime_statistic`·`schedule.on(date_rules.every_day, time_rules.after_market_open)` 사용법.
 
