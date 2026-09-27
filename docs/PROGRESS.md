@@ -83,6 +83,11 @@
 - 평가 시작 시점(현재 2003-01) 재검토: rank_check의 with_fill cut900·시총 구간을 보고 결정.
 - 상세: `results/step3/dancing-blue-cat/REVIEW.md`.
 
+### 3단계 전체 기간 N=40 equal (Determined Magenta Salamander, 2026-09-27) — 정상
+- 지문 동일, 보유 39.1~40.0, 1,745건 전부 체결, delist 3 = 자동 청산 3, neg·rej·late·cap 0, 현금 3.6%.
+- 참고 성과(판단 금지): CAGR +12.0%, 변동성 22.8%, MDD −54.8%.
+- 남은 조합: 40/invvol, 80/equal, 80/invvol. 상세: `results/step3/determined-magenta-salamander/REVIEW.md`.
+
 ### 3단계 전체 기간 N=60 invvol (Calculating Asparagus Fly, 2026-09-27) — 정상
 - 지문 equal과 동일, delist 집계 수정 확인(5건 = 자동 청산 5건), 2,414건 전부 체결, neg·rej·late 0, novol 0, cap 0.
 - equal 대비: 첫 달 7종목이 $200 미만이라 생략(다음 달 매수), 현금 5.6%(4.6%), 수수료 0.35%(0.31%).
