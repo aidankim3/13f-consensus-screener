@@ -1,0 +1,42 @@
+2002-12-01 00:00:00 Launching analysis for 03b8e100f2c65df2056d94b88da9e88c with LEAN Engine v2.5.0.0.18130
+2002-12-01 00:00:00 [CONFIG] step=1-universe period=1998-01-01~2015-12-31 cash=20000 entry=900 retain=1100 min_price=5.0 min_listing_months=24 excluded_sectors=[103, 104] reit_excluded=True type=ST00000001 exchanges=['NYS', 'NAS', 'ASE'] countries=['USA'] share_class=max_adv_21d sector_na_excluded=True lean_data_start=1998-01-02
+2002-12-01 00:00:00 [CONFIG] filing_lag_trading_days=1 approx_filing_last_year=2012 approx_extra_lag_days=0 start_check=sample50/ratio0.9/tol0.005 data=QC US Equities + Morningstar US Fundamentals (feed switched 2026-09-23)
+2002-12-01 00:00:00 [CONFIG] step=2-factors mom=12-1m min_months=12 expiry=180d quality=3/3 value=3/4 min_sector=20 merge_order=101,102,205,206,207,308,309,310,311 ttm=q4|twelve_months qgap=75-105d z=ddof0 spot=mom%|q:gp/ta,ni/ta,tl/ta|v:e/p,b/p,fcf/p,s/p|$B:mcap,rev,ni,ta log_step1_year=False log_step2_year=False
+2002-12-01 00:00:00 [CONFIG] mode=coverage_check period=2002-12-01~2015-01-31 months=2003-01,2007-06,2011-06,2014-12 dv=$5M/$20M/$100M top=20 tickers=30 etf_list=173 surv_dv=$20M factors=off orders=off rank=among_eligible
+2003-02-01 00:00:00 [COV 2003-01-31] total=6562 fund=2680 eligible=919 cut900=$0.03B | no_fund(price>=$5)=2471 >=$5M:470 >=$20M:182 >=$100M:44
+2003-02-01 00:00:00 [COV 2003-01-31] no_fund ex-ETF-list=2401 (listed ETFs=70) >=$20M:167 >=$100M:38 top20: off
+2003-02-01 00:00:00 [COV 2003-01-31] check: eligible=28/29 not: DELL:mcap
+2003-02-01 00:00:00 [COV 2003-01-31] funnel: no_fund=3882 price=562 sector_Fin=477 mcap=355 country=142 sector_RE=120 listing=72 type=17 share_class=10 exchange=3 listing_sid=3 | eligible mcap >=$10B:87 >=$1B:387 >=$0.5B:539 >=$0.2B:731
+2003-02-01 00:00:00 [COV 2003-01-31] listing ipo_ignored=86(eligible_now=11) future=0 conflict=0 recent=72 suspect>=cut900=0 top: none
+2003-02-01 00:00:00 [COV 2003-01-31] share_check(eligible, price*shares/mcap): so n=919 med=1.00 in10%=51% | osn n=918 med=1.01 in10%=51% | bas n=919 med=1.01 in10%=49% | das n=919 med=1.05 in10%=48%
+2003-02-01 00:00:00 [COV 2003-01-31] rank_check: top900 overlap=98.9% (n=919) far=326(hi=288 lo=38 top=320) ex($B): MSFT:253.9:507.9:so GE:231.2:28.9:so WMT:210.1:630.4:so KO:100.0:200.0:so | with_fill eligible=1264 cut900=$0.28B >=$10B:106 >=$1B:525 >=$0.5B:733 >=$0.2B:989
+2003-02-01 00:00:00 [COV 2003-01-31] mcap_missing=355 fields: so=337 osn=338 bas=345 das=345 any=345 | implied >=cut900:338 >=$1B:138 top(dv): DELL:$24:782M:so:$61.6B QLGC:$33:615M:so:$6.2B BRCM:$14:298M:so:$5.6B XLNX:$20:272M:so:$6.7B LLTC:$26:257M:so:$8.2B ERTS:$52:218M:so:$14.6B
+2007-06-30 00:00:00 [COV 2007-06-29] total=6922 fund=3220 eligible=1164 cut900=$0.37B | no_fund(price>=$5)=3076 >=$5M:921 >=$20M:471 >=$100M:116
+2007-06-30 00:00:00 [COV 2007-06-29] no_fund ex-ETF-list=2945 (listed ETFs=131) >=$20M:402 >=$100M:79 top20: off
+2007-06-30 00:00:00 [COV 2007-06-29] check: eligible=29/30 not: DELL:mcap
+2007-06-30 00:00:00 [COV 2007-06-29] funnel: no_fund=3702 sector_Fin=657 mcap=518 price=258 country=235 listing=187 sector_RE=141 type=29 share_class=18 listing_sid=9 exchange=4 | eligible mcap >=$10B:174 >=$1B:634 >=$0.5B:830 >=$0.2B:1002
+2007-06-30 00:00:00 [COV 2007-06-29] listing ipo_ignored=120(eligible_now=20) future=0 conflict=0 recent=187 suspect>=cut900=0 top: none
+2007-06-30 00:00:00 [COV 2007-06-29] share_check(eligible, price*shares/mcap): so n=1164 med=1.00 in10%=69% | osn n=1163 med=1.00 in10%=68% | bas n=1163 med=1.00 in10%=65% | das n=1163 med=1.02 in10%=64%
+2007-06-30 00:00:00 [COV 2007-06-29] rank_check: top900 overlap=96.0% (n=1164) far=234(hi=158 lo=76 top=169) ex($B): GE:392.2:49.2:so WMT:197.7:592.9:so GOOG:163.4:6516.0:so KO:120.9:242.0:so | with_fill eligible=1672 cut900=$0.92B >=$10B:215 >=$1B:865 >=$0.5B:1142 >=$0.2B:1428
+2007-06-30 00:00:00 [COV 2007-06-29] mcap_missing=518 fields: so=495 osn=496 bas=508 das=508 any=508 | implied >=cut900:354 >=$1B:231 top(dv): DELL:$29:581M:so:$63.8B S:$21:548M:so:$59.9B SUNW:$5:543M:so:$4.7B EMC:$18:521M:so:$38.0B BHI:$84:520M:bas:$26.9B MON:$68:355M:so:$36.8B
+2011-07-01 00:00:00 [COV 2011-06-30] total=6769 fund=3279 eligible=1174 cut900=$0.40B | no_fund(price>=$5)=2887 >=$5M:830 >=$20M:437 >=$100M:129
+2011-07-01 00:00:00 [COV 2011-06-30] no_fund ex-ETF-list=2722 (listed ETFs=165) >=$20M:317 >=$100M:60 top20: off
+2011-07-01 00:00:00 [COV 2011-06-30] check: eligible=29/30 not: DELL:mcap
+2011-07-01 00:00:00 [COV 2011-06-30] funnel: no_fund=3490 sector_Fin=581 price=478 mcap=463 country=262 sector_RE=154 listing=107 type=37 share_class=19 exchange=2 listing_sid=2 | eligible mcap >=$10B:184 >=$1B:669 >=$0.5B:853 >=$0.2B:1030
+2011-07-01 00:00:00 [COV 2011-06-30] listing ipo_ignored=134(eligible_now=22) future=0 conflict=0 recent=107 suspect>=cut900=0 top: none
+2011-07-01 00:00:00 [COV 2011-06-30] share_check(eligible, price*shares/mcap): so n=1174 med=1.00 in10%=75% | osn n=1174 med=1.00 in10%=74% | bas n=1174 med=1.00 in10%=73% | das n=1174 med=1.01 in10%=71%
+2011-07-01 00:00:00 [COV 2011-06-30] rank_check: top900 overlap=97.3% (n=1174) far=222(hi=170 lo=52 top=173) ex($B): AAPL:311.1:8711.7:so GE:199.9:25.0:so WMT:184.5:553.6:so GOOG:163.4:6529.4:so | with_fill eligible=1624 cut900=$1.02B >=$10B:222 >=$1B:905 >=$0.5B:1158 >=$0.2B:1416
+2011-07-01 00:00:00 [COV 2011-06-30] mcap_missing=463 fields: so=439 osn=450 bas=450 das=450 any=450 | implied >=cut900:321 >=$1B:236 top(dv): MON:$73:687M:so:$38.8B EMC:$28:546M:so:$56.9B S:$5:313M:so:$16.1B ESRX:$54:308M:so:$26.4B BHI:$73:301M:osn:$22.6B JOYG:$95:273M:so:$10.0B
+2015-01-01 00:00:00 [COV 2014-12-31] total=7366 fund=3770 eligible=1356 cut900=$0.85B | no_fund(price>=$5)=3067 >=$5M:905 >=$20M:413 >=$100M:114
+2015-01-01 00:00:00 [COV 2014-12-31] no_fund ex-ETF-list=2907 (listed ETFs=160) >=$20M:296 >=$100M:40 top20: off
+2015-01-01 00:00:00 [COV 2014-12-31] check: eligible=28/30 not: DELL:missing GOOG:share_class
+2015-01-01 00:00:00 [COV 2014-12-31] funnel: no_fund=3596 sector_Fin=712 price=449 mcap=411 country=304 listing=222 sector_RE=203 type=43 listing_sid=42 share_class=26 exchange=2 | eligible mcap >=$10B:260 >=$1B:850 >=$0.5B:1043 >=$0.2B:1215
+2015-01-01 00:00:00 [COV 2014-12-31] listing ipo_ignored=192(eligible_now=26) future=0 conflict=0 recent=222 suspect>=cut900=0 top: none
+2015-01-01 00:00:00 [COV 2014-12-31] share_check(eligible, price*shares/mcap): so n=1356 med=1.00 in10%=82% | osn n=1356 med=1.00 in10%=81% | bas n=1356 med=1.00 in10%=80% | das n=1356 med=1.01 in10%=78%
+2015-01-01 00:00:00 [COV 2014-12-31] rank_check: top900 overlap=97.2% (n=1356) far=192(hi=131 lo=61 top=117) ex($B): AAPL:643.1:2572.5:so GOOGL:359.5:7228.7:so WMT:276.8:830.4:so GE:254.1:31.8:so | with_fill eligible=1757 cut900=$1.62B >=$10B:305 >=$1B:1097 >=$0.5B:1338 >=$0.2B:1575
+2015-01-01 00:00:00 [COV 2014-12-31] mcap_missing=411 fields: so=385 osn=398 bas=401 das=401 any=401 | implied >=cut900:256 >=$1B:247 top(dv): RFMD:$17:761M:so:$4.8B CELG:$112:371M:so:$89.5B EMC:$30:334M:so:$59.0B APC:$82:322M:so:$41.8B AGN:$213:277M:so:$63.7B TQNT:$28:256M:so:$4.9B
+2015-01-31 00:00:00 [COV] done checkpoints=4 (2003-01-31,2007-06-29,2011-06-30,2014-12-31) — factors/orders off
+2015-01-31 00:00:00 [COV survival 2003-01->2014-12] fund n=385 surv=84% | top900 n=900 surv=88% | no_fund n=167 surv=30% later_fund=0
+2015-01-31 00:00:00 [COV survival 2007-06->2014-12] fund n=895 surv=87% | top900 n=900 surv=95% | no_fund n=402 surv=45% later_fund=0
+2015-01-31 00:00:00 [COV survival 2011-06->2014-12] fund n=863 surv=94% | top900 n=900 surv=100% | no_fund n=317 surv=80% later_fund=0
+2015-01-31 00:00:00 Algorithm Id:(03b8e100f2c65df2056d94b88da9e88c) completed in 81.03 seconds at 255k data points per second. Processing total of 20,650,589 data points.

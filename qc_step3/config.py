@@ -56,7 +56,7 @@ ENTRY_RANK = 900                          # 계획서 6장: 신규 진입은 적
 RETAIN_RANK = 1_100                       # 계획서 6장: 기존 유니버스 종목은 상위 1,100까지 유지
 MIN_PRICE = 5.0                           # 계획서 6장(4장 제약표): 주가 $5 이상. 월말 원주가 기준
 MIN_LISTING_MONTHS = 24                   # 계획서 6장: 상장 24개월 이상(상장일 판정은 universe.listing_info)
-MCAP_FILL = False                         # 시총 결측 대체(가격 × 주식 수). 결정 대기 — 커버리지 점검 rank_check로 판정(NOTES 기록)
+MCAP_FILL = False                         # 시총 결측 대체(가격 × 주식 수). 사용 금지(2026-09-27): 주식 수가 이후 분할로 재계산돼 시점 불일치(NOTES 기록)
 MCAP_FILL_FIELDS = ("so", "osn", "bas")   # 대체 주식 수 필드 우선순위(universe.SHARE_FIELDS 약어, das=희석 주식 수 제외)
 EXCLUDED_SECTOR_CODES = (103, 104)        # 계획서 6장: 금융(103 Financial Services)·부동산(104 Real Estate) 제외
 COMMON_STOCK_TYPE = "ST00000001"          # 계획서 6장: 보통주만(우선주·ETF 등 제외). Morningstar 증권 유형 코드 — NOTES.md [C]
