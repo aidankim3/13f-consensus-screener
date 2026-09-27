@@ -83,6 +83,12 @@
 - 평가 시작 시점(현재 2003-01) 재검토: rank_check의 with_fill cut900·시총 구간을 보고 결정.
 - 상세: `results/step3/dancing-blue-cat/REVIEW.md`.
 
+### 3단계 전체 기간 N=60 invvol (Calculating Asparagus Fly, 2026-09-27) — 정상
+- 지문 equal과 동일, delist 집계 수정 확인(5건 = 자동 청산 5건), 2,414건 전부 체결, neg·rej·late 0, novol 0, cap 0.
+- equal 대비: 첫 달 7종목이 $200 미만이라 생략(다음 달 매수), 현금 5.6%(4.6%), 수수료 0.35%(0.31%).
+- 참고 성과(판단 금지): CAGR +13.1%, 변동성 19.9%, MDD −49.5%.
+- 남은 조합: 40/equal, 40/invvol, 80/equal, 80/invvol. 상세: `results/step3/calculating-asparagus-fly/REVIEW.md`.
+
 ### 3단계 전체 기간 N=60 equal (Crawling Green Chicken, 2026-09-27) — 정상
 - [REBAL] #1 지문이 짧은 실행과 동일(uni=f1a94f20 zt=5ed62ed9), 2003~2004 결과 완전히 같음 → 짧은 실행으로 점검한 결과가 전체 실행에 그대로 이어짐.
 - 2,277건 전부 체결, neg·rej·late 0, 보유 58.9~60.0, 회전율 평균 0.95, 수수료 0.31%, 현금 4.6%, 3,732초.
