@@ -76,6 +76,13 @@
 - Smooth Light Brown Bear 실행은 새 coverage.py가 반영되지 않아 Antelope와 동일(3차 진단 미실행). 3차 진단에 대체 시총 검증 줄(share_check) 추가.
 - 상세: `results/step3/fat-fluorescent-yellow-antelope/REVIEW.md`.
 
+### 상장일 수정 확인 + 3차 진단 (Dancing Blue Cat, 2026-09-27)
+- (A) 상장일 수정 정상: ipo_ignored 86~192개 중 11~26개가 적격으로 복귀, GE #2(2003)~#7(2014). future·conflict 탈락 0.
+- (B) 시총 대체: 결측 355~518개 중 97~98%에 주식 수 있음, 만든 시총 현실적(DELL $61.6B, CELG $89.5B). 그러나 검증 ±10% 안 51~82%로 기준(90%) 미달 → **미적용**. 순위 기준 판정(`rank_check`: 상위 900 겹침 ≥95%·far 적음이면 적용) 진단 추가, 다음 실행에서 판정.
+- (C) **결정(2026-09-27)**: 생존편향은 한계로 기록하고 진행. 규칙 유지, 성과 판단은 같은 유니버스 기준선(무작위 Top-N) 중심, SPY 대비 절대 수익률은 과대 가능성 명시, 2011년 이후 구간 확인 분석 추가.
+- 평가 시작 시점(현재 2003-01) 재검토: rank_check의 with_fill cut900·시총 구간을 보고 결정.
+- 상세: `results/step3/dancing-blue-cat/REVIEW.md`.
+
 ### 3단계 QUICK_TEST 매매 점검 결과 (Baboon, N=60 equal, 2001~2004)
 - 매매 동작 정상: 첫 매매 2003-02-03 MOC 60종목, 주문 233건 전부 MOC·체결, [FILL] ok, neg·rej·delist 0, 로그 4.9KB.
 - [H] 확인: 200자 넘는 [CONFIG]·[SUMMARY] 잘림 없음, runtime statistic 표시됨.

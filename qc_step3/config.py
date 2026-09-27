@@ -27,6 +27,8 @@ COVERAGE_TICKERS = ("AAPL", "MSFT", "INTC", "CSCO", "ORCL", "IBM", "HPQ", "DELL"
 COVERAGE_TICKER_FROM = {"GOOG": (2004, 8)}  # 이 (연, 월) 이후 점검일에만 확인(상장 전 제외)
 # 커버리지 진단 2차(2026-09-26, Alpaca 결과 후): 탈락 사유 분포·상장일 모순·시총 결측·재무 누락 종목의 생존율
 COVERAGE_DETAIL_TOP_N = 6                 # 상장일 모순·시총 결측 종목 표시 수
+COVERAGE_LOG_LISTS = False                # 재무 없는 상위 20·대형주 30 줄 출력(결과가 매번 같아 로그 절약용으로 끔)
+COVERAGE_FILL_FIELDS = ("so", "osn", "bas")   # 시총 대체 후보 필드 우선순위(das=희석 주식 수는 제외)
 COVERAGE_SURVIVAL_DV = 20e6               # 생존율 비교 대상: 가격 ≥ $5이고 신호일 거래대금 ≥ 이 값
 COVERAGE_MCAP_LEVELS = (10e9, 1e9, 0.5e9, 0.2e9)   # 적격 종목 시총 분포 구간
 # 재무 없는 종목 중 ETF(재무 자료가 없어 구분 불가)를 걸러내는 알려진 ETF·HOLDRS 목록. 완전하지 않음(표시용)

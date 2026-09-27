@@ -47,6 +47,16 @@ def share_count(f, path):
     return 0.0
 
 
+def fill_mcap(f):
+    """대체 시총 = 가격 × COVERAGE_FILL_FIELDS 중 첫 번째로 값이 있는 주식 수. 없으면 0."""
+    paths = dict(SHARE_FIELDS)
+    for name in COVERAGE_FILL_FIELDS:
+        shares = share_count(f, paths[name])
+        if shares > 0:
+            return f.price * shares
+    return 0.0
+
+
 def month_text(day):
     return f"{day.year}-{day.month:02d}" if day else "none"
 
@@ -102,7 +112,8 @@ class CoverageCheck:
                       f"cut{ENTRY_RANK}=${cut / 1e9:.2f}B | no_fund(price>=${MIN_PRICE:.0f})={len(no_fund)} {level_text}")
         # 알려진 ETF를 뺀 재무 없는 종목(재무 누락 의심 기업) 거래대금 상위
         no_fund_stock = [(v, f) for v, f in no_fund if f.symbol.value not in COVERAGE_KNOWN_ETFS]
-        top = " ".join(f"{f.symbol.value}:${f.price:.0f}:{v / 1e6:.0f}M" for v, f in no_fund_stock[:COVERAGE_TOP_N])
+        top = (" ".join(f"{f.symbol.value}:${f.price:.0f}:{v / 1e6:.0f}M" for v, f in no_fund_stock[:COVERAGE_TOP_N])
+               if COVERAGE_LOG_LISTS else "off")
         stock_levels = " ".join(f">=${level / 1e6:.0f}M:{sum(v >= level for v, _ in no_fund_stock)}"
                                 for level in COVERAGE_DV_LEVELS[1:])
         self.algo.log(f"{tag} no_fund ex-ETF-list={len(no_fund_stock)} (listed ETFs={len(no_fund) - len(no_fund_stock)}) "
@@ -118,8 +129,12 @@ class CoverageCheck:
             else:
                 status.append(f"{ticker}:{screen.prev_reasons.get(symbol, 'unknown')}")
         half = (len(status) + 1) // 2
-        for part, items in (("a", status[:half]), ("b", status[half:])):
-            self.algo.log(f"{tag} check{part}: {' '.join(items)}")
+        if COVERAGE_LOG_LISTS:
+            for part, items in (("a", status[:half]), ("b", status[half:])):
+                self.algo.log(f"{tag} check{part}: {' '.join(items)}")
+        else:
+            bad = [s for s in status if "#" not in s.split(":")[1]]
+            self.algo.log(f"{tag} check: eligible={len(status) - len(bad)}/{len(status)} not: {' '.join(bad) or 'none'}")
         self._log_funnel(tag, screen)
         self._log_listing_mcap(tag, screen, representatives, signal_date, cut, dv)
         self._store_cohorts(signal_date, records, screen, ranked, dv)
@@ -148,6 +163,7 @@ class CoverageCheck:
         counts = {"future": 0, "conflict": 0, "recent": 0}
         suspect, mcap_missing = [], []
         ipo_ignored = ipo_ignored_ok = 0
+        pairs = []                                   # (Symbol, Morningstar 시총, 대체 시총) — 적격 종목
         ratios = {name: [] for name, _ in SHARE_FIELDS}
         for f, _ in screen.candidates:
             if f.symbol not in representatives:
@@ -163,6 +179,7 @@ class CoverageCheck:
                     shares = share_count(f, path)
                     if shares > 0:
                         ratios[name].append(f.price * shares / float(f.market_cap))
+                pairs.append((f.symbol, float(f.market_cap), fill_mcap(f)))
             if reason == "mcap":
                 mcap_missing.append((dv.get(f.symbol, 0.0), f))
             if reason != "listing":
@@ -195,7 +212,25 @@ class CoverageCheck:
             else:
                 checks.append(f"{name} n=0")
         self.algo.log(f"{tag} share_check(eligible, price*shares/mcap): {' | '.join(checks)}")
+        self._log_rank_check(tag, pairs, mcap_missing)
         self._log_mcap_missing(tag, mcap_missing, cut)
+
+    def _log_rank_check(self, tag, pairs, mcap_missing):
+        """시총은 순위(상위 900·1,100)에만 쓰므로 순위 기준으로 대체 시총을 판정한다.
+        overlap = 적격 종목을 Morningstar 시총과 대체 시총(COVERAGE_FILL_FIELDS 첫 번째 있는 필드)으로 각각 줄 세웠을 때
+        상위 900 집합이 겹치는 비율. far = 대체/원래 비율이 0.5 미만 또는 2 초과인 수.
+        with_fill = 시총 결측 종목을 대체 시총으로 채웠을 때의 적격 수·cut900·시총 구간."""
+        both = [(s, m, x) for s, m, x in pairs if x > 0]
+        by_mcap = {s for s, _, _ in sorted(both, key=lambda t: (-t[1], str(t[0].id)))[:ENTRY_RANK]}
+        by_fill = {s for s, _, _ in sorted(both, key=lambda t: (-t[2], str(t[0].id)))[:ENTRY_RANK]}
+        overlap = 100.0 * len(by_mcap & by_fill) / len(by_mcap) if by_mcap else 0.0
+        far = sum(not 0.5 <= x / m <= 2.0 for _, m, x in both)
+        filled = [m for _, m, _ in pairs] + [x for x in (fill_mcap(f) for _, f in mcap_missing) if x > 0]
+        filled.sort(reverse=True)
+        cut = filled[ENTRY_RANK - 1] if len(filled) >= ENTRY_RANK else 0.0
+        buckets = " ".join(f">=${level / 1e9:g}B:{sum(m >= level for m in filled)}" for level in COVERAGE_MCAP_LEVELS)
+        self.algo.log(f"{tag} rank_check: top{ENTRY_RANK} overlap={overlap:.1f}% (n={len(both)}) far={far} | "
+                      f"with_fill eligible={len(filled)} cut{ENTRY_RANK}=${cut / 1e9:.2f}B {buckets}")
 
     def _log_mcap_missing(self, tag, mcap_missing, cut):
         """시총 결측(mcap) 탈락 종목: 대체 주식 수 필드별 있는 수, 가격 × 주식 수(첫 번째 있는 필드)로 만든
