@@ -83,6 +83,13 @@
 - 평가 시작 시점(현재 2003-01) 재검토: rank_check의 with_fill cut900·시총 구간을 보고 결정.
 - 상세: `results/step3/dancing-blue-cat/REVIEW.md`.
 
+### 시총 대체 순위 판정 (Crying Orange Flamingo, 2026-09-27)
+- rank_check: 상위 900 겹침 96.0~97.3%(2007~2014, 2003은 적격 919개라 무의미), far(0.5~2배 밖) 14~35% → 기준("far 적음") 미달, **미적용 유지**.
+- 채웠을 때 cut900: 2003 $0.28B / 2007 $0.92B / 2011 $1.02B / 2014 $1.62B (지금 $0.03/0.37/0.40/0.85B).
+- 최종 판정 기준(고정): 2007·2011·2014 모두 far 중 상위 900 안 ≤45개이고 체계적 단위 오류 없으면 MCAP_FILL=True. 진단(far 방향·top·예시) 추가.
+- 코드 준비: config.MCAP_FILL(기본 False), universe.effective_mcap.
+- 상세: `results/step3/crying-orange-flamingo/REVIEW.md`.
+
 ### 3단계 QUICK_TEST 매매 점검 결과 (Baboon, N=60 equal, 2001~2004)
 - 매매 동작 정상: 첫 매매 2003-02-03 MOC 60종목, 주문 233건 전부 MOC·체결, [FILL] ok, neg·rej·delist 0, 로그 4.9KB.
 - [H] 확인: 200자 넘는 [CONFIG]·[SUMMARY] 잘림 없음, runtime statistic 표시됨.

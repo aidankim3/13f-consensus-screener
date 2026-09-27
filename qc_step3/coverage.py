@@ -4,8 +4,8 @@ from AlgorithmImports import *
 # 데이터 커버리지 점검 모드(COVERAGE_CHECK): 점검일에만 1단계 선별을 돌려 [COV] 로그를 남긴다. 전략 로직과 무관한 진단.
 # 1단계 함수(universe.py)를 그대로 쓰고 팩터·주문은 하지 않는다. 핵심 줄·경고는 main이 만든 diagnostics.Recorder로.
 from config import *
-from universe import (MonthScreen, buffer_members, choose_representatives, months_between, scan_securities,
-                      screen_stocks, stock_reason, to_date)
+from universe import (SHARE_FIELDS, MonthScreen, buffer_members, choose_representatives, fill_mcap_detail,
+                      months_between, scan_securities, screen_stocks, share_count, stock_reason, to_date)
 
 
 def dollar_volume(f):
@@ -17,43 +17,6 @@ def dollar_volume(f):
             continue
         if value > 0:
             return value
-    return 0.0
-
-
-# 시총 결측 종목의 대체 주식 수 후보(3차 진단). (약어, 필드 경로). 값이 여러 기간이면 3개월 → 기본값 → 12개월 순
-SHARE_FIELDS = (
-    ("so", ("company_profile", "shares_outstanding")),
-    ("osn", ("financial_statements", "balance_sheet", "ordinary_shares_number")),
-    ("bas", ("earning_reports", "basic_average_shares")),
-    ("das", ("earning_reports", "diluted_average_shares")),
-)
-
-
-def share_count(f, path):
-    """필드 경로의 주식 수(양수만). 없거나 NaN·0이면 0."""
-    value = f
-    try:
-        for name in path:
-            value = getattr(value, name)
-    except AttributeError:
-        return 0.0
-    for period in ("three_months", "value", "twelve_months", None):
-        try:
-            number = float(getattr(value, period) if period else value)
-        except (AttributeError, TypeError, ValueError):
-            continue
-        if number > 0:          # NaN은 False
-            return number
-    return 0.0
-
-
-def fill_mcap(f):
-    """대체 시총 = 가격 × COVERAGE_FILL_FIELDS 중 첫 번째로 값이 있는 주식 수. 없으면 0."""
-    paths = dict(SHARE_FIELDS)
-    for name in COVERAGE_FILL_FIELDS:
-        shares = share_count(f, paths[name])
-        if shares > 0:
-            return f.price * shares
     return 0.0
 
 
@@ -163,7 +126,8 @@ class CoverageCheck:
         counts = {"future": 0, "conflict": 0, "recent": 0}
         suspect, mcap_missing = [], []
         ipo_ignored = ipo_ignored_ok = 0
-        pairs = []                                   # (Symbol, Morningstar 시총, 대체 시총) — 적격 종목
+        pairs = []                                   # (Fundamental, Morningstar 시총, 대체 시총, 필드) — 적격 종목
+        filled_now = []
         ratios = {name: [] for name, _ in SHARE_FIELDS}
         for f, _ in screen.candidates:
             if f.symbol not in representatives:
@@ -179,7 +143,9 @@ class CoverageCheck:
                     shares = share_count(f, path)
                     if shares > 0:
                         ratios[name].append(f.price * shares / float(f.market_cap))
-                pairs.append((f.symbol, float(f.market_cap), fill_mcap(f)))
+                pairs.append((f, float(f.market_cap)) + fill_mcap_detail(f))
+            elif reason is None:
+                filled_now.append(fill_mcap_detail(f)[0])   # MCAP_FILL로 이미 채워져 적격인 종목
             if reason == "mcap":
                 mcap_missing.append((dv.get(f.symbol, 0.0), f))
             if reason != "listing":
@@ -212,25 +178,32 @@ class CoverageCheck:
             else:
                 checks.append(f"{name} n=0")
         self.algo.log(f"{tag} share_check(eligible, price*shares/mcap): {' | '.join(checks)}")
-        self._log_rank_check(tag, pairs, mcap_missing)
+        self._log_rank_check(tag, pairs, mcap_missing, filled_now)
         self._log_mcap_missing(tag, mcap_missing, cut)
 
-    def _log_rank_check(self, tag, pairs, mcap_missing):
+    def _log_rank_check(self, tag, pairs, mcap_missing, filled_now):
         """시총은 순위(상위 900·1,100)에만 쓰므로 순위 기준으로 대체 시총을 판정한다.
-        overlap = 적격 종목을 Morningstar 시총과 대체 시총(COVERAGE_FILL_FIELDS 첫 번째 있는 필드)으로 각각 줄 세웠을 때
-        상위 900 집합이 겹치는 비율. far = 대체/원래 비율이 0.5 미만 또는 2 초과인 수.
+        overlap = 적격 종목을 Morningstar 시총과 대체 시총(MCAP_FILL_FIELDS 첫 번째 있는 필드)으로 각각 줄 세웠을 때
+        상위 900 집합이 겹치는 비율(적격이 900개에 가까우면 의미가 약함). far = 대체/원래 비율이 0.5 미만(lo) 또는
+        2 초과(hi)인 수, 그중 Morningstar 상위 900 안(top) 수와 시총 큰 예시 4개(티커:원래:대체:필드).
         with_fill = 시총 결측 종목을 대체 시총으로 채웠을 때의 적격 수·cut900·시총 구간."""
-        both = [(s, m, x) for s, m, x in pairs if x > 0]
-        by_mcap = {s for s, _, _ in sorted(both, key=lambda t: (-t[1], str(t[0].id)))[:ENTRY_RANK]}
-        by_fill = {s for s, _, _ in sorted(both, key=lambda t: (-t[2], str(t[0].id)))[:ENTRY_RANK]}
+        both = [(f, m, x, n) for f, m, x, n in pairs if x > 0]
+        order = sorted(both, key=lambda t: (-t[1], str(t[0].symbol.id)))
+        by_mcap = {t[0].symbol for t in order[:ENTRY_RANK]}
+        by_fill = {t[0].symbol for t in sorted(both, key=lambda t: (-t[2], str(t[0].symbol.id)))[:ENTRY_RANK]}
         overlap = 100.0 * len(by_mcap & by_fill) / len(by_mcap) if by_mcap else 0.0
-        far = sum(not 0.5 <= x / m <= 2.0 for _, m, x in both)
-        filled = [m for _, m, _ in pairs] + [x for x in (fill_mcap(f) for _, f in mcap_missing) if x > 0]
+        far = [t for t in order if not 0.5 <= t[2] / t[1] <= 2.0]
+        hi = sum(t[2] > t[1] for t in far)
+        far_top = sum(t[0].symbol in by_mcap for t in far)
+        examples = " ".join(f"{f.symbol.value}:{m / 1e9:.1f}:{x / 1e9:.1f}:{n}" for f, m, x, n in far[:4])
+        filled = ([m for _, m, _, _ in pairs] + filled_now
+                  + [x for x in (fill_mcap_detail(f)[0] for _, f in mcap_missing) if x > 0])
         filled.sort(reverse=True)
         cut = filled[ENTRY_RANK - 1] if len(filled) >= ENTRY_RANK else 0.0
         buckets = " ".join(f">=${level / 1e9:g}B:{sum(m >= level for m in filled)}" for level in COVERAGE_MCAP_LEVELS)
-        self.algo.log(f"{tag} rank_check: top{ENTRY_RANK} overlap={overlap:.1f}% (n={len(both)}) far={far} | "
-                      f"with_fill eligible={len(filled)} cut{ENTRY_RANK}=${cut / 1e9:.2f}B {buckets}")
+        self.algo.log(f"{tag} rank_check: top{ENTRY_RANK} overlap={overlap:.1f}% (n={len(both)}) far={len(far)}"
+                      f"(hi={hi} lo={len(far) - hi} top={far_top}) ex($B): {examples or 'none'} | with_fill "
+                      f"eligible={len(filled)} cut{ENTRY_RANK}=${cut / 1e9:.2f}B {buckets}")
 
     def _log_mcap_missing(self, tag, mcap_missing, cut):
         """시총 결측(mcap) 탈락 종목: 대체 주식 수 필드별 있는 수, 가격 × 주식 수(첫 번째 있는 필드)로 만든

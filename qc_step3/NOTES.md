@@ -196,6 +196,7 @@ changes = pd.read_csv(io.StringIO(qb.object_store.read("program_trading/step1/un
   - 성과 판단은 같은 유니버스에서 뽑은 기준선(무작위 Top-N, 계획서 기준선) 대비를 중심으로 한다(같은 누락을 공유).
   - SPY 대비 절대 수익률은 부풀려질 수 있음을 결과마다 명시한다.
   - 누락이 덜한 2011년 이후 구간을 확인 분석(민감도)으로 따로 계산한다. 주 평가 기간은 바꾸지 않는다.
+- **시총 대체 계산 코드(2026-09-27, 기본 꺼짐):** `config.MCAP_FILL`이 True일 때만 `universe.effective_mcap`이 Morningstar 시총 결측 종목에 신호일 원주가 × 주식 수(`MCAP_FILL_FIELDS` 우선순위 so→osn→bas)를 쓴다. 순위와 팩터 가치 비율에 같이 쓰인다. Flamingo 실행: 상위 900 겹침 96~97%이나 far 14~35%로 미적용. 최종 기준: 2007·2011·2014 모두 far 중 상위 900 안 ≤45개이고 체계적 단위 오류가 없으면 적용.
 - **시총 대체 계산(보류, 2026-09-27):** 시총 결측 대표 종목(355~518개)의 97~98%에 주식 수 필드가 있으나, 가격 × 주식 수 / Morningstar 시총이 ±10% 안인 비율이 51~82%로 미리 정한 기준(90%)에 못 미쳐 적용하지 않았다. 순위 기준 판정(`rank_check`: 상위 900 겹침 95% 이상·2배 이상 어긋남 적음)으로 다시 판단한다.
 - **데이터 커버리지 점검 모드(`COVERAGE_CHECK`, 전략 로직과 무관):**
   - 목적: 적격 종목이 2003년 약 1,100개·2015년 약 1,400개이고, 900위 시총(cut900)이 2003년 $0.19B·2015년 $0.90B로 작다. QC Morningstar 데이터에서 과거 종목(특히 대형주)이 빠졌는지, 빠졌다면 어떤 종목인지 확인하려는 것이다.
@@ -218,7 +219,7 @@ changes = pd.read_csv(io.StringIO(qb.object_store.read("program_trading/step1/un
     - `funnel:` — 1단계 탈락 사유 전체 분포(많은 순)와 적격 종목의 시총 구간별 수(≥$10B·$1B·$0.5B·$0.2B).
     - `listing` — `ipo_ignored`(IPO 날짜가 최초 거래일보다 뒤라 무시한 대표 종목 수, 그중 지금 적격인 수)와, 상장 24개월 조건 탈락(ipo_date 경로)을 `future`(ipo_date가 신호일보다 뒤, 현재 시점 값 의심), `conflict`(ipo_date는 24개월 미만이지만 SID 최초 거래일로는 24개월 이상), `recent`(규칙대로)로 나눈 수. `suspect>=cut900` = future·conflict 중 시총이 900위 이상인 수. 시총 상위 6개(`티커:ipo연-월:sid연-월:$시총B`).
     - `share_check` — 대체 시총 검증: 시총이 있는 적격 종목에서 가격 × 주식 수 필드별 / Morningstar 시총의 중앙값과 ±10% 안 비율. 1.00 근처·90% 이상이면 그 필드로 시총을 대신 계산해도 된다.
-    - `rank_check`(2026-09-27 추가) — 적격 종목을 Morningstar 시총과 대체 시총(`COVERAGE_FILL_FIELDS` 우선순위 so→osn→bas)으로 각각 줄 세운 상위 900의 겹침 비율, 비율이 0.5~2 밖인 수(`far`), 시총 결측 종목을 대체 시총으로 채웠을 때의 적격 수·cut900·시총 구간(`with_fill`).
+    - `rank_check`(2026-09-27 추가, 같은 날 far 세부 추가: `far=n(hi= lo= top=)`와 시총 큰 예시 4개 `티커:원래$B:대체$B:필드`) — 적격 종목을 Morningstar 시총과 대체 시총(`MCAP_FILL_FIELDS` 우선순위 so→osn→bas)으로 각각 줄 세운 상위 900의 겹침 비율, 비율이 0.5~2 밖인 수(`far`), 시총 결측 종목을 대체 시총으로 채웠을 때의 적격 수·cut900·시총 구간(`with_fill`).
     - `COVERAGE_LOG_LISTS = False`(기본): 재무 없는 상위 20과 대형주 30 두 줄 대신, 적격이 아닌 점검 종목만 한 줄(`check: eligible=n/30 not: …`)로 남긴다(로그 절약).
     - `mcap_missing` — 시총이 없거나 0이라 탈락한 수. 3차 진단(2026-09-26 추가): 대체 주식 수 필드(`so`=company_profile.shares_outstanding, `osn`=balance_sheet.ordinary_shares_number, `bas`/`das`=earning_reports.basic/diluted_average_shares)별 값이 있는 수, `any`, 가격 × 첫 번째 있는 필드로 만든 시총이 cut900·$1B 이상인 수, 거래대금 상위 6개(`티커:가격:거래대금:필드:만든 시총`).
   - 끝에 `[COV survival 점검월->마지막 점검월]`: 가격 ≥ $5·거래대금 ≥ $20M인 `fund`(재무 있는 보통주 후보), `top900`(적격 시총 상위 900), `no_fund`(재무 없음, 알려진 ETF 제외)가 마지막 점검일 입력에 남은 비율. `later_fund` = 살아남은 no_fund 중 마지막 점검일에 재무가 있는 수.

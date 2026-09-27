@@ -28,7 +28,7 @@ COVERAGE_TICKER_FROM = {"GOOG": (2004, 8)}  # 이 (연, 월) 이후 점검일에
 # 커버리지 진단 2차(2026-09-26, Alpaca 결과 후): 탈락 사유 분포·상장일 모순·시총 결측·재무 누락 종목의 생존율
 COVERAGE_DETAIL_TOP_N = 6                 # 상장일 모순·시총 결측 종목 표시 수
 COVERAGE_LOG_LISTS = False                # 재무 없는 상위 20·대형주 30 줄 출력(결과가 매번 같아 로그 절약용으로 끔)
-COVERAGE_FILL_FIELDS = ("so", "osn", "bas")   # 시총 대체 후보 필드 우선순위(das=희석 주식 수는 제외)
+
 COVERAGE_SURVIVAL_DV = 20e6               # 생존율 비교 대상: 가격 ≥ $5이고 신호일 거래대금 ≥ 이 값
 COVERAGE_MCAP_LEVELS = (10e9, 1e9, 0.5e9, 0.2e9)   # 적격 종목 시총 분포 구간
 # 재무 없는 종목 중 ETF(재무 자료가 없어 구분 불가)를 걸러내는 알려진 ETF·HOLDRS 목록. 완전하지 않음(표시용)
@@ -56,6 +56,8 @@ ENTRY_RANK = 900                          # 계획서 6장: 신규 진입은 적
 RETAIN_RANK = 1_100                       # 계획서 6장: 기존 유니버스 종목은 상위 1,100까지 유지
 MIN_PRICE = 5.0                           # 계획서 6장(4장 제약표): 주가 $5 이상. 월말 원주가 기준
 MIN_LISTING_MONTHS = 24                   # 계획서 6장: 상장 24개월 이상(상장일 판정은 universe.listing_info)
+MCAP_FILL = False                         # 시총 결측 대체(가격 × 주식 수). 결정 대기 — 커버리지 점검 rank_check로 판정(NOTES 기록)
+MCAP_FILL_FIELDS = ("so", "osn", "bas")   # 대체 주식 수 필드 우선순위(universe.SHARE_FIELDS 약어, das=희석 주식 수 제외)
 EXCLUDED_SECTOR_CODES = (103, 104)        # 계획서 6장: 금융(103 Financial Services)·부동산(104 Real Estate) 제외
 COMMON_STOCK_TYPE = "ST00000001"          # 계획서 6장: 보통주만(우선주·ETF 등 제외). Morningstar 증권 유형 코드 — NOTES.md [C]
 # 아래 네 조건은 계획서 6장 '미국 보통주'의 해석으로 사용자가 채택(2026-09-26)

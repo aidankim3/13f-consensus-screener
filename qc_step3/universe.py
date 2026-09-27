@@ -62,7 +62,7 @@ def screen_stocks(screen, representatives, signal_date, recorder):
             continue
         screen.funnel["eligible"] += 1
         screen.eligible[symbol] = Candidate(
-            float(f.market_cap), sector, latest_file_date(f, recorder), float(f.price))
+            effective_mcap(f), sector, latest_file_date(f, recorder), float(f.price))
 
 
 def security_reason(f):
@@ -97,9 +97,57 @@ def stock_reason(f, signal_date):
     if source != "presample" and (
             listing_date is None or months_between(listing_date, signal_date) < MIN_LISTING_MONTHS):
         return ("listing_sid" if source == "sid" else "listing"), sector, source   # 계획서 6장: 상장 24개월
-    if not f.market_cap or f.market_cap <= 0:
+    if effective_mcap(f) <= 0:
         return "mcap", sector, source
     return None, sector, source
+
+
+# 시총 결측 대체용 주식 수 필드. (약어, 필드 경로). 값이 여러 기간이면 3개월 → 기본값 → 12개월 순
+SHARE_FIELDS = (
+    ("so", ("company_profile", "shares_outstanding")),
+    ("osn", ("financial_statements", "balance_sheet", "ordinary_shares_number")),
+    ("bas", ("earning_reports", "basic_average_shares")),
+    ("das", ("earning_reports", "diluted_average_shares")),
+)
+
+
+def share_count(f, path):
+    """필드 경로의 주식 수(양수만). 없거나 NaN·0이면 0."""
+    value = f
+    try:
+        for name in path:
+            value = getattr(value, name)
+    except AttributeError:
+        return 0.0
+    for period in ("three_months", "value", "twelve_months", None):
+        try:
+            number = float(getattr(value, period) if period else value)
+        except (AttributeError, TypeError, ValueError):
+            continue
+        if number > 0:          # NaN은 False
+            return number
+    return 0.0
+
+
+def fill_mcap_detail(f):
+    """대체 시총 = 신호일 원주가 × MCAP_FILL_FIELDS 중 첫 번째로 값이 있는 주식 수. (값, 필드 약어), 없으면 (0, "none")."""
+    paths = dict(SHARE_FIELDS)
+    for name in MCAP_FILL_FIELDS:
+        shares = share_count(f, paths[name])
+        if shares > 0:
+            return f.price * shares, name
+    return 0.0, "none"
+
+
+def effective_mcap(f):
+    """순위에 쓰는 시총: Morningstar 시총, 없으면 MCAP_FILL일 때만 대체 시총(NOTES 기록 '시총 대체 계산')."""
+    try:
+        mcap = float(f.market_cap or 0.0)
+    except (TypeError, ValueError):
+        mcap = 0.0
+    if mcap > 0:
+        return mcap
+    return fill_mcap_detail(f)[0] if MCAP_FILL else 0.0
 
 
 def listing_info(f):
