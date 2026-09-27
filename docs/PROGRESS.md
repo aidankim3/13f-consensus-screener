@@ -83,6 +83,14 @@
 - 평가 시작 시점(현재 2003-01) 재검토: rank_check의 with_fill cut900·시총 구간을 보고 결정.
 - 상세: `results/step3/dancing-blue-cat/REVIEW.md`.
 
+### 평가 시작 결정 + 상장일 수정 후 QUICK_TEST (Ugly Tan Shark, 2026-09-27)
+- **결정(2026-09-27)**: 평가 시작 2003-01 신호일 유지(원래 기준 '적격 ≥ 900'을 2003부터 만족, 데이터 보고 옮기지 않음). 소형주 비중 문제는 2011년 이후 확인 분석으로 점검.
+- QUICK_TEST(N=60 equal) 정상: 244건 전부 MOC 체결, [FILL] ok, neg·rej·delist 0, [START] eligible 907(≥900), short_months 5→1.
+- 새 [REBAL] #1 지문: uni=f1a94f20 zt=5ed62ed9 → 전체 기간 실행과 비교.
+- 관찰: SEB(주가 $543~608)가 종목당 목표 금액보다 비싸 0주로 내림 → 전량 매도(정수 주 규칙, 자본 $20k/60종목). 운용 예산 결정 때 재검토.
+- 다음: QUICK_TEST=False 전체 기간(N=60 equal) → 지문 비교 → 나머지 5개 조합.
+- 상세: `results/step3/ugly-tan-shark/REVIEW.md`.
+
 ### 시총 대체 최종 판정 (Fat Sky Blue Rhinoceros, 2026-09-27) — 적용 안 함
 - far 중 상위 900 안 117~173개(기준 ≤45) → 미달. 원인: 주식 수 필드가 현재까지의 분할로 재계산됨(MSFT ×2, WMT ×3, GE ×1/8, AAPL ×28, GOOG ×40 = 이후 분할 배수). 미래 정보라 신호일에 보정 불가 → `MCAP_FILL = False` 고정.
 - 팩터는 주당 값을 쓰지 않아 영향 없음. 시총 결측 대형주는 생존편향 한계에 포함.
