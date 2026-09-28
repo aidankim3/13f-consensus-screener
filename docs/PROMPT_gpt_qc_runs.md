@@ -1,5 +1,8 @@
 # ChatGPT(크롬 익스텐션 에이전트)용 프롬프트 — 4단계 12개 조합 실행
 
+실행할 비용 시나리오: base 완료(2026-09-28) → 다음은 **low**, 그다음 **high**. 아래 프롬프트의 `<COST>`를 low 또는 high로 바꿔 붙여 넣는다.
+이미 코드가 붙어 있는 프로젝트면 0단계는 건너뛰라고 덧붙여도 된다(첫 줄 확인만).
+
 코드는 GitHub Raw 페이지에서 복사/붙여넣기만 한다(타이핑 금지). ``` 안 전체를 붙여 넣는다.
 
 ```
@@ -36,10 +39,10 @@
 
 ## 1. 조합마다 반복 (아래 표 순서대로, 한 번에 하나씩)
 1-1. Project → Parameters에서 n_holdings, weighting, score, cost 네 개를 표의 값으로 맞추고 저장한다.
-     파라미터가 없으면 새로 추가한다. cost는 항상 base.
+     파라미터가 없으면 새로 추가한다. cost는 항상 <COST>.
 1-2. Backtest를 실행한다.
 1-3. 시작 직후 터미널에 아래 두 줄이 맞게 나오는지 확인한다. 하나라도 다르면 즉시 Stop하고 알린다.
-     - "[CONFIG] step=4-costs cost=base x1.0 ... score=<표의 score>"
+     - "[CONFIG] step=4-costs cost=<COST> x0.5(low) 또는 x2.0(high) ... score=<표의 score>"
      - "[CONFIG] step=3-portfolio n=<표의 n_holdings> weighting=<표의 weighting> quick_test=False period=1998-01-01~2015-12-31"
 1-4. 약 1시간 걸린다. 10분마다 진행 상황을 확인한다. 아래 중 하나가 보이면 끝난 것이다.
      - 터미널 마지막 부분에 "Algorithm Id:(...) completed in ... seconds" 줄
@@ -47,7 +50,7 @@
      끝나기 전에는 다음 조합으로 넘어가거나 다른 백테스트를 돌리지 않는다.
      2시간이 지나도 끝나지 않으면 멈추고 알린다.
 1-5. 끝나면 결과 화면에서 Logs와 Orders를 다운로드한다(가능하면 Trades와 결과 JSON도).
-     파일 이름을 구분할 수 있으면 앞에 "#번호_n_weighting_score_"를 붙인다(예: 01_60_equal_sector_logs.txt).
+     파일 이름을 구분할 수 있으면 앞에 "<COST>_#번호_n_weighting_score_"를 붙인다(예: low_01_60_equal_sector_logs.txt).
 1-6. 로그 끝의 "[PERF]" 줄과 "[SUMMARY]" 줄을 그대로 복사해 둔다.
 
 | # | n_holdings | weighting | score |
