@@ -24,7 +24,8 @@ high 실행 때는 이 파일의 `low`를 `high`로, `x0.5`를 `x2.0`으로 바�
 1-3. 시작 직후 터미널(Console)에 아래 두 줄이 맞게 나오는지 확인한다. 하나라도 다르면 즉시 Stop하고 알린다.
      - "[CONFIG] step=4-costs cost=low x0.5 ... score=<표의 score> ..."
      - "[CONFIG] step=3-portfolio n=<표의 n_holdings> weighting=<표의 weighting> quick_test=False ..."
-1-4. 약 1시간 걸린다. 10분마다 확인한다. 아래 중 하나가 보이면 끝난 것이다.
+1-4. 약 1시간 걸린다. 1-3 확인 뒤에는 실행 시작 후 1시간이 될 때까지 확인하지 말고 기다린다.
+     1시간이 되면 처음 확인하고, 아직 안 끝났으면 그 후로는 10분마다 확인한다. 아래 중 하나가 보이면 끝난 것이다.
      - 터미널 끝부분에 "Algorithm Id:(...) completed in ... seconds" 줄
      - 결과 화면 또는 Backtest 목록의 상태가 "Completed"(진행률 100%)
      끝나기 전에는 다음 조합으로 넘어가거나 다른 백테스트를 돌리지 않는다.
