@@ -20,20 +20,38 @@ high 실행 때는 이 파일의 `low`를 `high`로, `x0.5`를 `x2.0`으로 바�
      - weighting = 표의 값
      - score = 표의 값
      - cost = low   (12개 모두 low)
-1-2. Backtest를 실행한다.
-1-3. 시작 직후 터미널(Console)에 아래 두 줄이 맞게 나오는지 확인한다. 하나라도 다르면 즉시 Stop하고 알린다.
-     - "[CONFIG] step=4-costs cost=low x0.5 ... score=<표의 score> ..."
+1-2. Backtest를 실행하고 시작 시각을 적어 둔다.
+     터미널에 "Received backtest '<이름>' request" 줄이 나온다. 이 <이름>(예: 'Pensive Fluorescent Orange Cat')이 백테스트 이름이니 적어 둔다.
+1-3. 약 10~40초 뒤 "Launching analysis for ..." 아래에 [CONFIG] 줄 다섯 개가 나온다. 이 중 두 줄을 확인한다.
+     터미널은 긴 줄 끝을 "..."로 자르므로 줄 앞부분만 보면 된다. 하나라도 다르면 즉시 Stop하고 알린다.
+     - "[CONFIG] step=4-costs cost=low x0.5 spread=... score=<표의 score> impact_check=..."
+       (지난 base 실행 때는 "cost=base x1.0"이었다. base가 보이면 파라미터가 안 바뀐 것이니 Stop.)
      - "[CONFIG] step=3-portfolio n=<표의 n_holdings> weighting=<표의 weighting> quick_test=False ..."
-1-4. 약 1시간 걸린다. 1-3 확인 뒤에는 실행 시작 후 1시간이 될 때까지 확인하지 말고 기다린다.
-     1시간이 되면 처음 확인하고, 아직 안 끝났으면 그 후로는 10분마다 확인한다. 아래 중 하나가 보이면 끝난 것이다.
-     - 터미널 끝부분에 "Algorithm Id:(...) completed in ... seconds" 줄
-     - 결과 화면 또는 Backtest 목록의 상태가 "Completed"(진행률 100%)
+     이어서 "[START] sig=1998-01-30 ..." 줄이 나오면 정상 진행이다.
+1-4. 약 55~70분 걸린다. 1-3 확인 뒤에는 실행 시작 후 1시간이 될 때까지 확인하지 말고 기다린다.
+     1시간이 되면 처음 확인하고, 아직 안 끝났으면 그 후로는 10분마다 확인한다.
+     기다리는 동안 코드 파일을 열거나 클릭·저장하지 않는다(편집기를 건드리면 "Built project ..." 줄이 계속 생긴다).
+     끝나면 터미널 끝에 아래 순서로 줄이 나온다. "Algorithm Id:(...) completed in ... seconds"가 보이면 끝난 것이다.
+       Algorithm '<id>' completed
+       ... [PERF] costs=low(x0.5) ...
+       ... [SUMMARY] ...
+       ... Algorithm Id:(<id>) completed in 3300 seconds ...
+     [PERF] 줄에 "costs=low(x0.5)"가 있는지 확인한다(base면 Stop하고 알림).
      끝나기 전에는 다음 조합으로 넘어가거나 다른 백테스트를 돌리지 않는다.
-     2시간이 지나도 끝나지 않으면 멈추고 알린다.
+     시작 후 2시간이 지나도 끝나지 않으면 멈추고 알린다.
 1-5. 끝나면 결과 화면에서 네 가지를 다운로드한다: Logs, Orders, Trades, 결과 JSON(Overview/Report의 다운로드).
      가능하면 파일 이름 앞에 "low_번호_n_weighting_score_"를 붙인다. 예: low_01_60_equal_sector_logs.txt
-     이름을 바꿀 수 없으면 그대로 두고, 백테스트 이름(예: "Calm Green Hamster")을 보고에 적는다.
-1-6. 로그 끝의 "[PERF]" 줄과 "[SUMMARY]" 줄을 그대로 복사해 둔다.
+     이름을 바꿀 수 없으면 그대로 두고, 1-2에서 적은 백테스트 이름을 보고에 적는다.
+1-6. [PERF] 줄을 적어 둔다. 터미널에서는 "| SPY cagr..."에서 잘리므로 보이는 부분까지만 적어도 된다
+     (전체 줄은 다운로드한 Logs 파일 끝부분에 있다).
+
+## 정상 메시지 (멈추지 말 것)
+아래 줄은 매번 나오는 정상 메시지다. 이것 때문에 멈추지 않는다.
+- "Warning: when performing history requests, the start date will be adjusted ..."(시작 때 2줄)
+- "[START] ... eligible<900 (NOTES 기록 참고)"
+- "Warning: history() has been called 30+ consecutive times ..."(2000-08 무렵)
+- "Built project '...' in Cloud ..."(여러 번 나와도 됨)
+- "Due to numerical precision issues in the factor file ... [SPY, 1/1/1998]", "The starting dates ... [SPY, 1998-01-02]"(끝날 때)
 
 | # | n_holdings | weighting | score |
 |---|---|---|---|
