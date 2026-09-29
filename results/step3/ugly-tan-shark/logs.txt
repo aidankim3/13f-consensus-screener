@@ -1,0 +1,25 @@
+2001-01-01 00:00:00 Launching analysis for 75cbceca2996a77186ca0d3adcae69da with LEAN Engine v2.5.0.0.18130
+2001-01-01 00:00:00 Warning: when performing history requests, the start date will be adjusted if there are numerical precision errors in the factor files.
+2001-01-01 00:00:00 Warning: when performing history requests, the start date will be adjusted if it is before the first known date for the symbol.
+2001-01-01 00:00:00 [CONFIG] step=1-universe period=1998-01-01~2015-12-31 cash=20000 entry=900 retain=1100 min_price=5.0 min_listing_months=24 excluded_sectors=[103, 104] reit_excluded=True type=ST00000001 exchanges=['NYS', 'NAS', 'ASE'] countries=['USA'] share_class=max_adv_21d sector_na_excluded=True lean_data_start=1998-01-02
+2001-01-01 00:00:00 [CONFIG] filing_lag_trading_days=1 approx_filing_last_year=2012 approx_extra_lag_days=0 start_check=sample50/ratio0.9/tol0.005 data=QC US Equities + Morningstar US Fundamentals (feed switched 2026-09-23)
+2001-01-01 00:00:00 [CONFIG] step=2-factors mom=12-1m min_months=12 expiry=180d quality=3/3 value=3/4 min_sector=20 merge_order=101,102,205,206,207,308,309,310,311 ttm=q4|twelve_months qgap=75-105d z=ddof0 spot=mom%|q:gp/ta,ni/ta,tl/ta|v:e/p,b/p,fcf/p,s/p|$B:mcap,rev,ni,ta log_step1_year=False log_step2_year=False
+2001-01-01 00:00:00 [CONFIG] step=3-portfolio n=60 weighting=equal quick_test=True period=2001-01-01~2004-12-31 portfolio_start=2003-01(reason:1998-2002 eligible<900 so not large-cap; 1999-2002 data-limited reference) keep=0.4 fill=0.2 cap=0.05 sigma=ewma60/252/min126 min_trade=$200 cash_buffer=0.01 moc=open+30m brokerage=IB/margin lev_check=2.0 fee=LEAN-IB costs=fee_only norm=raw subscribe=holdings+buys
+2001-01-01 00:00:00 [START] sig=2000-12-29 check: eligible=907 sample=50 bar_at_sig=50 price_match=50 filing=48 -> first rebuild applied (on_schedule)
+2001-01-01 00:00:00 [FACTOR] sig=2000-12-29 targets=900 scored=838 ex:mom=5,qual=45,value=26,expired=14,pit=0 ttm:q4=0,ttm12=861,none=1 merge=none z:mean=-0.000,sd=1.000 chk:capex_pos=0,assets_single=861,rev_zero=2
+2001-02-01 00:00:00 [FACTOR] sig=2001-01-31 targets=925 scored=858 ex:mom=7,qual=46,value=25,expired=17,pit=0 ttm:q4=0,ttm12=884,none=1 merge=none z:mean=-0.000,sd=1.000 chk:capex_pos=0,assets_single=805,rev_zero=2
+2003-02-01 00:00:00 [REBAL] #1 sig=2003-01-31 exec=2003-02-03 keep=0 sell=0() new=60 empty=0 novol=0 orders=60 skip=0($0) unbought=$653 werr_max=0.0021 cash=4.3% cap=0 scaled=0 pv=$20000 uni=f1a94f20 zt=5ed62ed9
+2003-02-04 10:00:00 [FILL] AAON qty=+20 fill=$16.18 close=$16.18 ok submit=2003-02-03 10:00 filled=2003-02-03 16:00 fee=$1.00
+2003-02-04 10:00:00 [FILL] AVD qty=+15 fill=$21.30 close=$21.30 ok submit=2003-02-03 10:00 filled=2003-02-03 16:00 fee=$1.00
+2003-02-04 10:00:00 [FILL] ANSS qty=+17 fill=$18.70 close=$18.70 ok submit=2003-02-03 10:00 filled=2003-02-03 16:00 fee=$1.00
+2003-02-04 10:00:00 [FILL] BIO qty=+9 fill=$35.48 close=$35.48 ok submit=2003-02-03 10:00 filled=2003-02-03 16:00 fee=$1.00
+2003-02-04 10:00:00 [FILL] BMI qty=+10 fill=$31.63 close=$31.63 ok submit=2003-02-03 10:00 filled=2003-02-03 16:00 fee=$1.00
+2003-03-01 00:00:00 [REBAL] #2 sig=2003-02-28 exec=2003-03-03 keep=59 sell=1(universe:1) new=1 empty=0 novol=0 orders=2 skip=38($1462) unbought=$999 werr_max=0.0052 cash=3.3% cap=0 scaled=0 pv=$19786
+2003-03-04 10:00:00 [FILL] PEGA qty=-61 fill=$4.10 close=$4.10 ok submit=2003-03-03 10:00 filled=2003-03-03 16:00 fee=$1.00
+2003-03-04 10:00:00 [FILL] OIS qty=+28 fill=$11.43 close=$11.43 ok submit=2003-03-03 10:00 filled=2003-03-03 16:00 fee=$1.00
+2003-07-01 00:00:00 Warning: history() has been called 30+ consecutive times with overlapping time windows. Instead of re-fetching a long lookback, fetch it once and keep it updated with a rolling window, consolidators or indicator warm up.
+2004-01-01 00:00:00 [PYEAR 2003] hold=60.0 to=0.97 orders=129 fee=$129(0.51%) skip=473 empty=0 cash=4.2% cap=0 delist=0 rej=0 neg=0
+2005-01-01 00:00:00 [PERF] costs=fee_only base=2003-01-31 first_fill=2003-02-03 end=2004-12-31 yrs=1.92 cagr=+41.1% vol=14.1% sharpe=2.50 mdd=-11.2%(2004-04-05>2004-08-13,rec 2004-11-05) | SPY cagr=+21.9% mdd=-7.5%
+2005-01-01 00:00:00 [SUMMARY] start=on_schedule months=48 first_sig=2000-12-29 last_sig=2004-11-30 n_min=886 n_avg=941 n_max=997 entries_after_init=848 exits=769 gone=265 short_months=1 pit_late_months=34 pit_late_max=36 empty_calls=0 | factors: months=48 cov_avg=0.950 cov_min=0.907 top_ex=qual(1340) | portfolio: years=2 turnover_avg=0.87 fee_avg=0.42% skipped=1042 neg_cash_days=0 rej=0 late=0 avg_hold=59.9 cash_avg=6.0% max_expo=0.982
+2005-01-01 00:00:00 [PYEAR 2004] hold=59.8 to=0.76 orders=115 fee=$115(0.34%) skip=569 empty=0 cash=7.7% cap=0 delist=0 rej=0 neg=0
+2005-01-01 00:00:00 Algorithm Id:(75cbceca2996a77186ca0d3adcae69da) completed in 684.95 seconds at 28k data points per second. Processing total of 19,076,432 data points.
