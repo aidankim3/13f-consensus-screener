@@ -1,0 +1,44 @@
+Algorithm Initialization: Warning: when performing history requests, the start date will be adjusted if there are numerical precision errors in the factor files.
+Algorithm Initialization: Warning: when performing history requests, the start date will be adjusted if it is before the first known date for the symbol.
+1998-01-01 00:00:00 Launching analysis for c09110824721584646f30cfdd1a5d486 with LEAN Engine v2.5.0.0.18134
+1998-01-01 00:00:00 [CONFIG] step=1-universe period=1998-01-01~2015-12-31 cash=20000 entry=900 retain=1100 min_price=5.0 min_listing_months=24 excluded_sectors=[103, 104] reit_excluded=True type=ST00000001 exchanges=['NYS', 'NAS', 'ASE'] countries=['USA'] share_class=max_adv_21d sector_na_excluded=True lean_data_start=1998-01-02
+1998-01-01 00:00:00 [CONFIG] filing_lag_trading_days=1 approx_filing_last_year=2012 approx_extra_lag_days=0 start_check=sample50/ratio0.9/tol0.005 data=QC US Equities + Morningstar US Fundamentals (feed switched 2026-09-23)
+1998-01-01 00:00:00 [CONFIG] step=2-factors mom=12-1m min_months=12 expiry=180d quality=3/3 value=3/4 min_sector=20 merge_order=101,102,205,206,207,308,309,310,311 ttm=q4|twelve_months qgap=75-105d z=ddof0 spot=mom%|q:gp/ta,ni/ta,tl/ta|v:e/p,b/p,fcf/p,s/p|$B:mcap,rev,ni,ta log_step1_year=False log_step2_year=False
+1998-01-01 00:00:00 [CONFIG] step=4-costs cost=low x0.5 spread=abdi_ranaldo(21d, cs_logged) floor=tick/2 cap=0.1 default_half=0.005 slip=0.0 score=global impact_check=adv20>0.01
+1998-01-01 00:00:00 [CONFIG] step=3-portfolio n=80 weighting=equal quick_test=False period=1998-01-01~2015-12-31 portfolio_start=2003-01(reason:1998-2002 eligible<900 so not large-cap; 1999-2002 data-limited reference) keep=0.4 fill=0.2 cap=0.05 sigma=ewma60/252/min126 min_trade=$200 cash_buffer=0.01 moc=open+30m brokerage=IB/margin lev_check=2.0 fee=LEAN-IB+half_spread norm=raw subscribe=holdings+buys
+1998-01-31 00:00:00 [START] sig=1998-01-30 check: eligible=837 sample=50 bar_at_sig=50 price_match=50 filing=48 -> first rebuild applied (on_schedule) eligible<900 (NOTES 기록 참고)
+1999-01-30 00:00:00 [FACTOR] sig=1999-01-29 targets=882 scored=809 ex:mom=3,qual=46,value=33,expired=24,pit=0 ttm:q4=721,ttm12=104,none=0 merge=global z:mean=0.000,sd=1.000 chk:capex_pos=0,assets_single=20,rev_zero=2
+1999-02-27 00:00:00 [FACTOR] sig=1999-02-26 targets=869 scored=797 ex:mom=2,qual=41,value=29,expired=29,pit=0 ttm:q4=710,ttm12=101,none=0 merge=global z:mean=-0.000,sd=1.000 chk:capex_pos=0,assets_single=19,rev_zero=1
+2000-08-01 00:00:00 Warning: history() has been called 30+ consecutive times with overlapping time windows. Instead of re-fetching a long lookback, fetch it once and keep it updated with a rolling window, consolidators or indicator warm up.
+2003-02-01 00:00:00 [REBAL] #1 sig=2003-01-31 exec=2003-02-03 keep=0 sell=0() new=80 empty=0 novol=0 orders=78 skip=2($495) unbought=$1268 werr_max=0.0125 cash=7.3% cap=0 scaled=0 pv=$20000 uni=f1a94f20 zt=9f45893a
+2003-02-01 00:00:00 [COST] #1 sig=2003-01-31 est=78 miss=0 floor=23 cap=0 ar_half_med=45.2bp cs_half_med=33.8bp x0.5
+2003-02-04 10:00:00 [FILL] AAON qty=+15 fill=$16.18 close=$16.18 ok submit=2003-02-03 10:00 filled=2003-02-03 16:00 fee=$1.30
+2003-02-04 10:00:00 [FILL] AVD qty=+11 fill=$21.30 close=$21.30 ok submit=2003-02-03 10:00 filled=2003-02-03 16:00 fee=$0.95
+2003-02-04 10:00:00 [FILL] AIT qty=+15 fill=$16.64 close=$16.64 ok submit=2003-02-03 10:00 filled=2003-02-03 16:00 fee=$1.67
+2003-03-01 00:00:00 [REBAL] #2 sig=2003-02-28 exec=2003-03-03 keep=76 sell=2(band:1,universe:1) new=4 empty=0 novol=0 orders=6 skip=47($1272) unbought=$1092 werr_max=0.0039 cash=4.6% cap=0 scaled=0 pv=$19613
+2003-03-01 00:00:00 [COST] #2 sig=2003-02-28 est=82 miss=0 floor=30 cap=0 ar_half_med=31.6bp cs_half_med=33.3bp x0.5
+2003-03-04 10:00:00 [FILL] MCRI qty=-27 fill=$8.98 close=$8.98 ok submit=2003-03-03 10:00 filled=2003-03-03 16:00 fee=$0.57
+2003-03-04 10:00:00 [FILL] TMI qty=-30 fill=$7.10 close=$7.10 ok submit=2003-03-03 10:00 filled=2003-03-03 16:00 fee=$1.09
+2003-03-04 10:00:00 [FILL] ANK qty=+13 fill=$17.35 close=$17.35 ok submit=2003-03-03 10:00 filled=2003-03-03 16:00 fee=$0.53
+2004-01-01 00:00:00 [PYEAR 2003] hold=79.8 to=0.99 orders=174 cost=$183(0.73%) spr=$96(0.38%,21bp) adv_max=2.28% skip=580 empty=0 cash=4.9% cap=0 delist=0 rej=0 neg=0
+2005-01-01 00:00:00 [PYEAR 2004] hold=79.7 to=0.85 orders=157 cost=$207(0.61%) spr=$129(0.38%,22bp) adv_max=2.37% skip=740 empty=0 cash=7.3% cap=0 delist=0 rej=0 neg=0
+2006-01-03 10:00:00 [PYEAR 2005] hold=78.3 to=0.65 orders=128 cost=$140(0.34%) spr=$76(0.19%,14bp) adv_max=0.57% skip=765 empty=0 cash=9.1% cap=0 delist=1 rej=0 neg=0
+2007-01-03 10:00:00 [PYEAR 2006] hold=79.6 to=0.74 orders=150 cost=$192(0.39%) spr=$117(0.24%,16bp) adv_max=0.48% skip=718 empty=0 cash=6.2% cap=0 delist=2 rej=0 neg=0
+2007-06-30 00:00:00 [SPOT 2007-06-29 IBM] mom=+40.8% q=0.377,0.094,0.726 v=0.067,0.194,0.067,0.644 $B=143.2,92.2,9.6,101.6 fd=2007-04-24 ttm=q4 z=+0.76
+2007-06-30 00:00:00 [SPOT 2007-06-29 MSFT] mom=+33.3% q=0.611,0.212,0.453 v=0.050,0.127,0.052,0.179 $B=276.3,49.6,13.9,63.9 fd=2007-04-26 ttm=q4 z=+0.92
+2007-06-30 00:00:00 [SPOT 2007-06-29 XOM] mom=+37.5% q=0.754,0.184,0.489 v=0.087,0.245,0.073,0.808 $B=465.2,375.9,40.4,223.3 fd=2007-05-08 ttm=q4 z=+1.78
+2008-01-01 00:00:00 [PYEAR 2007] hold=79.0 to=0.91 orders=183 cost=$275(0.51%) spr=$184(0.34%,18bp) adv_max=0.32% skip=623 empty=0 cash=5.9% cap=0 delist=2 rej=0 neg=0
+2009-01-01 00:00:00 [PYEAR 2008] hold=79.7 to=1.21 orders=233 cost=$404(0.89%) spr=$288(0.63%,26bp) adv_max=1.95% skip=696 empty=0 cash=6.6% cap=0 delist=2 rej=0 neg=0
+2010-01-01 00:00:00 [PYEAR 2009] hold=80.0 to=1.01 orders=185 cost=$330(0.87%) spr=$238(0.63%,32bp) adv_max=5.70% skip=751 empty=0 cash=4.9% cap=0 delist=0 rej=0 neg=0
+2010-03-02 10:00:00 [WARN] negative cash -2650.21 on 2010-03-02 exposure=1.056
+2011-01-01 00:00:00 [PYEAR 2010] hold=80.0 to=1.62 orders=308 cost=$509(1.02%) spr=$355(0.71%,23bp) adv_max=91.94% skip=663 empty=0 cash=1.3% cap=0 delist=0 rej=0 neg=85
+2012-01-03 10:00:00 [PYEAR 2011] hold=79.9 to=1.00 orders=255 cost=$342(0.57%) spr=$215(0.36%,18bp) adv_max=22.37% skip=696 empty=0 cash=-0.6% cap=0 delist=1 rej=0 neg=133
+2013-01-01 00:00:00 [PYEAR 2012] hold=80.0 to=1.11 orders=303 cost=$388(0.62%) spr=$237(0.38%,17bp) adv_max=3.93% skip=548 empty=0 cash=3.0% cap=0 delist=0 rej=0 neg=45
+2014-01-01 00:00:00 [PYEAR 2013] hold=79.5 to=0.94 orders=328 cost=$436(0.54%) spr=$272(0.33%,18bp) adv_max=8.26% skip=554 empty=0 cash=-1.7% cap=0 delist=0 rej=0 neg=176
+2015-01-01 00:00:00 [PYEAR 2014] hold=79.9 to=1.07 orders=483 cost=$560(0.58%) spr=$318(0.33%,16bp) adv_max=1.94% skip=468 empty=0 cash=2.3% cap=0 delist=0 rej=0 neg=43
+2016-01-01 00:00:00 [PERF] costs=low(x0.5) base=2003-01-31 first_fill=2003-02-03 end=2015-12-31 yrs=12.91 cagr=+13.1% vol=22.1% sharpe=0.67 mdd=-55.8%(2007-07-13>2009-03-09,rec 2011-01-14) | SPY cagr=+9.1% mdd=-55.2%
+2016-01-01 00:00:00 [SUMMARY] start=on_schedule months=215 first_sig=1998-01-30 last_sig=2015-11-30 n_min=487 n_avg=817 n_max=1028 entries_after_init=2999 exits=3182 gone=928 short_months=95 pit_late_months=174 pit_late_max=74 empty_calls=1 | factors: months=215 cov_avg=0.899 cov_min=0.000 top_ex=mom(11127) | portfolio: years=13 turnover_avg=1.01 cost_avg=0.64% spread_avg=0.41% adv_max=91.94% adv_over=105 skipped=8375 neg_cash_days=575 rej=0 late=0 avg_hold=79.6 cash_avg=3.7% max_expo=1.100
+2016-01-01 00:00:00 [PYEAR 2015] hold=79.6 to=1.05 orders=352 cost=$650(0.63%) spr=$474(0.46%,22bp) adv_max=9.05% skip=573 empty=0 cash=-0.7% cap=0 delist=0 rej=0 neg=93
+2016-01-01 00:00:00 Algorithm Id:(c09110824721584646f30cfdd1a5d486) completed in 3211.84 seconds at 25k data points per second. Processing total of 78,792,786 data points.
+2016-01-01 00:00:00 Due to numerical precision issues in the factor file, data for the following symbols was adjust to a later starting date: [SPY, 1/1/1998]
+2016-01-01 00:00:00 The starting dates for the following symbols have been adjusted to match their map files first date: [SPY, 1998-01-02]
