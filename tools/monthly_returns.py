@@ -1,7 +1,7 @@
 """results/stepN/*/result.json에서 월말 자산으로 월 수익률을 뽑아 CSV로 저장하고 요약을 출력한다.
 
 사용법: python tools/monthly_returns.py results/step4 [--start 2003-01] [--end 2015-12]
-- 월말 자산 = 그 달 마지막 Equity 값(종가). 첫 달 말 값을 기준으로 다음 달부터 수익률 계산.
+- 월말 자산 = 그 달 마지막 거래일 종가의 Equity 값(0시 점은 전날 종가로 봄). 첫 달 말 값을 기준으로 다음 달부터 수익률 계산.
 - 출력: <폴더>/monthly_returns.csv (행=월, 열=cost/n/weighting/score, 마지막 열 SPY)
 """
 import argparse
@@ -15,7 +15,8 @@ from pathlib import Path
 def month_end_values(values, idx):
     out = {}
     for row in values:
-        t = dt.datetime.fromtimestamp(row[0], dt.timezone.utc) - dt.timedelta(hours=5)  # 미국 동부 기준
+        # 미국 동부 기준. QC 일별 점은 다음 날 0시(= 전날 종가)에 찍히므로 1분을 빼 전날로 돌린다(2026-09-30 수정)
+        t = dt.datetime.fromtimestamp(row[0], dt.timezone.utc) - dt.timedelta(hours=5, minutes=1)
         out[t.strftime("%Y-%m")] = row[idx]
     return out
 

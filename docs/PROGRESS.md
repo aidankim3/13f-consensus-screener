@@ -170,8 +170,8 @@
   - calm-blue-monkey: 종료 후 QC 자동 분석(PortfolioMarginUsageAnalysis)에서 Runtime Error. 알고리즘은 정상 종료했고 로그·주문·result.json 모두 완전 → 새 엔진 v18139의 사후 분석 버그, 결과 사용에 문제 없음.
   - 관찰: high에서 음수 현금 3개 조합(16~22일, 최대 −$90, 노출 ≤ 1.004) — 비용이 1% 현금 버퍼를 잠깐 넘는 것, 기록만(현금 계좌면 Stage 0에서 버퍼 검토).
 
-## 5단계 기준선 — calibrate 완료(φ = 0.913), final 실행 대기 (2026-09-30)
-- 사용자 결정: ① A0 = **60 / equal / global**(개발 구간 선택 규칙: base 연평균 월수익률 14.50% 최고, 2위 80/equal/global 14.21%는 0.5%p 이내라 N=60 우선, 60/equal/sector 13.86%는 0.64%p 차이) ② 무작위 대조군 500개는 한 번의 백테스트 안 가상 장부로 계산, 실제 A0 점수 복제 장부로 검증 ③ 개발 구간만(2016년 이후는 Stage 0 동결 뒤).
+## 5단계 기준선 — final 완료, Q1 ④ 미달 확인 (2026-09-30)
+- 사용자 결정: ① A0 = **60 / equal / global**(개발 구간 선택 규칙: base 연평균 월수익률 14.50% 최고(월말 수정 후 14.31%), 2위 80/equal/global 14.21%는 0.5%p 이내라 N=60 우선, 60/equal/sector 13.86%는 0.64%p 차이) ② 무작위 대조군 500개는 한 번의 백테스트 안 가상 장부로 계산, 실제 A0 점수 복제 장부로 검증 ③ 개발 구간만(2016년 이후는 Stage 0 동결 뒤).
 - 월수익률 추출: `tools/monthly_returns.py` → `results/step4/monthly_returns.csv`(36개 설정 + SPY, 2003-02~2015-12, 155개월).
 - `qc_step5/`: `baseline.py`(새) — 무작위 점수 AR(1) Top-N(500 × base·비용 2배), A0 복제 장부(base·high), 단일 팩터 3개, 유니버스 동일가중·역변동성(비례 비용), RSP·SPY. 로그 `[CONFIG] step=5-baseline`·`[SHADOW]`·`[CAL]`·`[RAND]`·`[SFACT]`·`[BENCH]`·`[SECTOR]`, 차트 `Baseline`·`Bench`(월별 지수).
 - 합성 데이터 시험 통과(φ↑ → 회전율↓, 비용 0이면 base = high, 분할 연속).
@@ -179,7 +179,12 @@
 - 짧은 실행(Crying Asparagus Whale, 2001~2004 calibrate) 정상: A0 실제 매매가 4단계와 같음, 복제 장부 연평균 34.98% vs 실제 34.80%(월 차이 평균 0.03%p). 실행 뒤 Runtime Error는 엔진 v18139 사후 분석 오류로 추정.
   - 수정(사용자 확인, 전체 기간 calibrate부터 적용): 차트 시리즈 한도 10개 초과 → Universe 차트 끔·A0·SPY 차트 제외 / 마지막 달 누락 → 마지막 거래일까지 체결·평가.
 - **전체 기간 calibrate(Swimming Yellow Sheep, 수정 전 코드) 정상: `results/step5/swimming-yellow-sheep/REVIEW.md`** — 실제 A0 = 4단계와 동일, 복제 장부 월 차이 평균 0.067%p, 회전율 0.96 = 실제. φ별 회전율 0.9→1.04, 0.95→0.70 → **RANDOM_PHI = 0.913 고정**, BASELINE_MODE=final로 변경.
-- 다음: 전체 기간 final(무작위 500 × base·비용 2배), 수정된 코드 4개 파일 반영 필요.
+- **final(Ugly Magenta Shark) 정상: `results/step5/ugly-magenta-shark/REVIEW.md`** — 복제 장부 월 상관 0.9999, 무작위 회전율 0.96 = A0.
+  - 개발 구간 참고: A0 − 무작위 평균 +1.10%p(비용 2배 +1.23%p, NW se 1.37%, 백분위 84), A0 − RSP +2.54%p, A0 − 이론 동일가중 유니버스 −0.45%p. 단일 팩터 퀄리티 +14.34%·가치 +14.28%(A0 +14.31%), 모멘텀 +10.51%. 섹터: 경기소비재 +11.5%p.
+  - **계획서 Q1 ④(개발 구간): DSR 0.181(< 0.5), PBO 0.706(> 0.5) → 미달.** 12개 설정 모두 같은 가중 유니버스 대비 음수. 무작위(같은 마찰)는 이론 유니버스보다 −1.55%p.
+  - 월수익률 도구 수정: QC 일별 점(0시 = 전날 종가) 월말 하루 밀림 → `tools/monthly_returns.py` 고쳐 `monthly_returns.csv` 다시 생성(A0 연평균 14.50 → 14.31%). 같은 가중 유니버스 대비로 선택 규칙 재계산해도 A0 = 60/equal/global 그대로.
+  - 통계 도구: `tools/baseline_stats.py`(NW 표준오차, DSR, PBO-CSCV).
+- 다음: Q1 ④ 미달에 대한 사용자 결정(계획서상 Q1 불합격이면 A0 자리에 RSP).
 - 이후: DSR·PBO(12개 설정, 같은 가중 유니버스 대비), A0 백분위·섹터·회전율 차이 보고.
 
 ## 이후 단계(예정)
