@@ -225,24 +225,8 @@ class Baselines:
         member_ids = {self._id(s) for s in members}
         for s in members:
             self.sector[self.ids[s]] = month.records.get(s, {}).get("sector")
-        held = set()
-        for ledger in self.ledgers:
-            held.update(ledger.pos)
-            held.update(i for i, _, _, _ in ledger.pending)
-        wanted = set(members) | {self.symbols[i] for i in held | set(self.prev_members)} | set(self.bench_symbols.values())
-        start = datetime.combine(signal_date - timedelta(days=45), datetime.min.time())
-        if self.prev_signal is not None:
-            start = min(start, datetime.combine(self.prev_signal, datetime.min.time()))
-        raw, adj = window_bars(self.algo, wanted, start, datetime.combine(signal_date + timedelta(days=1),
-                                                                         datetime.min.time()), self.rec.warn_once)
-        m = self._month(raw, adj, eligible, signal_date)
-        year = self.prev_exec.year if self.prev_exec else signal_date.year
         first = self.prev_signal is None
-        if not first:
-            self.real.append(real_pv)
-            for ledger in self.ledgers:
-                ledger.values.append(ledger.settle(m, year))
-            self._benchmarks(adj, signal_date)
+        m, adj = self._advance(signal_date, members, eligible, real_pv)
 
         # 점수 대상(종목 번호, SID 순으로 고정)과 순위
         scored = sorted(month.z, key=lambda s: str(s.id))
@@ -268,13 +252,33 @@ class Baselines:
                 order, rank_of = fixed[key], fixed_rank[key]
             final = self._select(ledger, order, rank_of, pos_in, scored_idx, member_ids, keep_cut, fill_cut)
             ledger.plan(final, m, ledger.values[-1], self.n)
-        if first:
-            self._benchmarks(adj, signal_date)
         self._set_universe_weights(members, closes, m)
         self.prev_signal, self.prev_exec = signal_date, exec_date
         self.prev_members = sorted(member_ids)
         if not first:
             self._plot()
+
+    def _advance(self, day, members, eligible, real_pv):
+        """직전 신호일 이후 가격을 받아 직전 계획을 체결하고 day 종가로 평가(첫 호출은 가격만). 반환: (Month, 조정 종가)."""
+        held = set()
+        for ledger in self.ledgers:
+            held.update(ledger.pos)
+            held.update(i for i, _, _, _ in ledger.pending)
+        wanted = (set(members) | {self.symbols[i] for i in held | set(self.prev_members)}
+                  | set(self.bench_symbols.values()))
+        start = datetime.combine(day - timedelta(days=45), datetime.min.time())
+        if self.prev_signal is not None:
+            start = min(start, datetime.combine(self.prev_signal, datetime.min.time()))
+        raw, adj = window_bars(self.algo, wanted, start, datetime.combine(day + timedelta(days=1), datetime.min.time()),
+                               self.rec.warn_once)
+        m = self._month(raw, adj, eligible, day)
+        if self.prev_signal is not None:
+            year = self.prev_exec.year
+            self.real.append(real_pv)
+            for ledger in self.ledgers:
+                ledger.values.append(ledger.settle(m, year))
+            self._benchmarks(adj, day)
+        return m, adj
 
     def _select(self, ledger, order, rank_of, pos_in, scored_idx, member_ids, keep_cut, fill_cut):
         """portfolio.select_holdings와 같은 밴드 규칙(동일가중이라 σ̂ 조건 없음)."""
@@ -379,23 +383,27 @@ class Baselines:
         def mean_ret(name):
             rs = [l.values[-1] / l.values[-2] - 1 for l in self.ledgers if l.name == name and l.values[-2] > 0]
             return sum(rs) / len(rs) if rs else None
-        points = {"A0": self.real[-1] / self.real[-2] - 1}
-        for name in {l.name for l in self.ledgers}:
+        points = {}
+        for name in sorted({l.name for l in self.ledgers}):
             points[name] = mean_ret(name)
         for key, values in self.bench.items():
-            if values and values[-1] is not None:
+            if key != "SPY" and values and values[-1] is not None:
                 points[key] = values[-1]
         for name, r in points.items():
             if r is None:
                 continue
             self.index[name] *= 1 + r
-            chart = "Bench" if name in ("RSP", "SPY") or name.startswith("sf_") else "Baseline"
+            chart = "Bench" if name == "RSP" or name.startswith("sf_") else "Baseline"
             if self.mode == "final" or not name.startswith("cal"):
                 self.algo.plot(chart, name, self.index[name])
 
     # ------------------------------------------------------------------
-    def finish(self):
-        """개발 구간 요약 로그([BASE]·[SHADOW]·[RAND]·[SFACT]·[BENCH]·[SECTOR] 또는 [CAL])."""
+    def finish(self, last_day, real_pv):
+        """마지막 신호일 뒤 계획을 마지막 거래일(last_day) 종가까지 체결·평가한 뒤(4단계 월말 자산과 같은 끝) 요약 로그
+        ([BASE]·[SHADOW]·[RAND]·[SFACT]·[BENCH]·[SECTOR] 또는 [CAL])."""
+        if self.prev_signal is not None and last_day > self.prev_signal:
+            self._advance(last_day, [], {}, real_pv)
+            self._plot()
         def stats(values):
             rs = [b / a - 1 for a, b in zip(values, values[1:]) if a > 0]
             if len(rs) < 2:

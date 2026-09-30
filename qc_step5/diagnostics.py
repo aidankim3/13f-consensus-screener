@@ -221,10 +221,11 @@ class Recorder:
         self._accumulate_year(row, signal_date)
         self._accumulate_factor_year(factor_month, signal_date)
 
-        self.algo.plot("Universe", "Members", n_members)
-        self.algo.plot("Universe", "Eligible", n_eligible)
-        self.algo.plot("Universe Flow", "Entries", n_entries)
-        self.algo.plot("Universe Flow", "Exits", n_exits)
+        if UNIVERSE_CHARTS:                  # 5단계: 무료 계정 차트 시리즈 한도(10개)를 기준선 차트에 쓰려고 끔
+            self.algo.plot("Universe", "Members", n_members)
+            self.algo.plot("Universe", "Eligible", n_eligible)
+            self.algo.plot("Universe Flow", "Entries", n_entries)
+            self.algo.plot("Universe Flow", "Exits", n_exits)
 
         if len(self.monthly_rows) % SAVE_EVERY_MONTHS == 0:
             self.save_records()

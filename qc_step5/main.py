@@ -261,4 +261,4 @@ class ProgramTradingBaselineStep5(QCAlgorithm):
         self._report.finish(self._start_deferred, self._empty_calls, last_close,
                             float(self.securities[self._calendar_symbol].price))
         if self._baseline is not None:
-            self._baseline.finish()
+            self._baseline.finish(last_close, float(self.portfolio.total_portfolio_value))

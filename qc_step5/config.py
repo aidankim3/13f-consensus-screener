@@ -211,3 +211,4 @@ BENCH_TICKERS = ("RSP", "SPY")            # 거래 가능한 투자 대안(RSP, 
 IB_FEE_PER_SHARE = 0.005                  # 가상 장부 수수료 = LEAN IB 주식 수수료와 같게: 주당 $0.005, 최소 $1, 최대 거래액의 0.5%
 IB_MIN_FEE = 1.0
 IB_MAX_FEE_RATE = 0.005
+UNIVERSE_CHARTS = False                   # Universe·Universe Flow 차트(시리즈 4개). 무료 계정 한도 10개라 5단계에서는 끔(유니버스 수는 [SUMMARY]에 있음)

@@ -176,6 +176,8 @@
 - `qc_step5/`: `baseline.py`(새) — 무작위 점수 AR(1) Top-N(500 × base·비용 2배), A0 복제 장부(base·high), 단일 팩터 3개, 유니버스 동일가중·역변동성(비례 비용), RSP·SPY. 로그 `[CONFIG] step=5-baseline`·`[SHADOW]`·`[CAL]`·`[RAND]`·`[SFACT]`·`[BENCH]`·`[SECTOR]`, 차트 `Baseline`·`Bench`(월별 지수).
 - 합성 데이터 시험 통과(φ↑ → 회전율↓, 비용 0이면 base = high, 분할 연속).
 - 실행 순서: ① QUICK_TEST + calibrate(오류 점검) ② 전체 기간 calibrate → φ 결정 ③ 전체 기간 final. 파라미터는 60/equal/global/base 고정.
+- 짧은 실행(Crying Asparagus Whale, 2001~2004 calibrate) 정상: A0 실제 매매가 4단계와 같음, 복제 장부 연평균 34.98% vs 실제 34.80%(월 차이 평균 0.03%p). 실행 뒤 Runtime Error는 엔진 v18139 사후 분석 오류로 추정.
+  - 수정(사용자 확인, 전체 기간 calibrate부터 적용): 차트 시리즈 한도 10개 초과 → Universe 차트 끔·A0·SPY 차트 제외 / 마지막 달 누락 → 마지막 거래일까지 체결·평가.
 - 이후: DSR·PBO(12개 설정, 같은 가중 유니버스 대비), A0 백분위·섹터·회전율 차이 보고.
 
 ## 이후 단계(예정)
