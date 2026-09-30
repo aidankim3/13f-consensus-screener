@@ -6,5 +6,5 @@ QC에 올리는 파일 10개: 4단계 9개(`main.py`, `config.py`, `universe.py`
 
 ## 실행 순서 (파라미터는 항상 n_holdings=60, weighting=equal, score=global, cost=base)
 1. `QUICK_TEST = True`(기본), `BASELINE_MODE = "calibrate"`(기본) → 오류 없이 끝나는지 점검(약 10~20분)
-2. `QUICK_TEST = False`, `BASELINE_MODE = "calibrate"` → `[CAL]` 줄로 A0 회전율과 같아지는 φ를 정함(Claude가 `RANDOM_PHI`에 기록)
-3. `QUICK_TEST = False`, `BASELINE_MODE = "final"` → 무작위 500개 × (base, 비용 2배) 본 실행
+2. `QUICK_TEST = False`, `BASELINE_MODE = "calibrate"` → 완료(2026-09-30, φ = 0.913, `results/step5/swimming-yellow-sheep`)
+3. `QUICK_TEST = False`, `BASELINE_MODE = "final"`(현재 기본값) → 무작위 500개 × (base, 비용 2배) 본 실행

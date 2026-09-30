@@ -199,10 +199,11 @@ FUNNEL_ORDER = (
 
 # --- 5단계 기준선 (계획서 6장 '기준선', 10장 시험 집합·무작위 대조군) ---
 # 실제 매매는 선택된 A0 하나로 돌리고, 같은 백테스트 안에서 가상 장부로 기준선을 계산한다(baseline.py, NOTES.md 5단계).
-BASELINE_MODE = "calibrate"               # "off" | "calibrate"(AR(1) φ별 회전율 확인) | "final"(무작위 500개 본 실행)
+BASELINE_MODE = "final"                   # "off" | "calibrate"(AR(1) φ별 회전율 확인, 2026-09-30 완료) | "final"(무작위 500개 본 실행)
 A0_SETTING = (60, "equal", "global")      # 사용자 확정(2026-09-30): 개발 구간 선택 규칙 결과. 기준선 실행은 이 파라미터 + cost=base만 허용
 RANDOM_SEEDS = 500                        # 계획서 10장: 무작위 점수 Top-N 500개
-RANDOM_PHI = None                         # 무작위 점수 AR(1) 계수. calibrate 결과(A0 회전율과 같아지는 값)로 한 번 정해 고정
+RANDOM_PHI = 0.913                        # 무작위 점수 AR(1) 계수. 2026-09-30 전체 기간 calibrate(Swimming Yellow Sheep)로 한 번 정해 고정:
+                                          # A0 회전율 0.96, φ 0.9→1.04·0.95→0.70 사이 √(1−φ) 보간(선형 보간 0.912와 같은 값)
 CALIBRATE_PHIS = (0.0, 0.5, 0.8, 0.9, 0.95, 0.98)   # calibrate에서 시험하는 φ
 CALIBRATE_SEEDS = 20                      # calibrate에서 φ마다 돌리는 무작위 장부 수(base 비용만)
 RANDOM_SEED_BASE = 20260930               # 난수 씨앗(재현용)
