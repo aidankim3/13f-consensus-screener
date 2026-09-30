@@ -169,10 +169,17 @@
   - 비용 2배에서도 CAGR 10.0~12.2%(SPY +9.1%, 생존편향 주의). 조합 간 순서는 3개 시나리오에서 거의 같음(40종목 최하, invvol Sharpe·global CAGR 소폭 우위).
   - calm-blue-monkey: 종료 후 QC 자동 분석(PortfolioMarginUsageAnalysis)에서 Runtime Error. 알고리즘은 정상 종료했고 로그·주문·result.json 모두 완전 → 새 엔진 v18139의 사후 분석 버그, 결과 사용에 문제 없음.
   - 관찰: high에서 음수 현금 3개 조합(16~22일, 최대 −$90, 노출 ≤ 1.004) — 비용이 1% 현금 버퍼를 잠깐 넘는 것, 기록만(현금 계좌면 Stage 0에서 버퍼 검토).
-- 다음: 5단계 기준선(무작위 Top-N, RSP, SPY) 설계.
+
+## 5단계 기준선 — 코드 작성, QC 실행 대기 (2026-09-30)
+- 사용자 결정: ① A0 = **60 / equal / global**(개발 구간 선택 규칙: base 연평균 월수익률 14.50% 최고, 2위 80/equal/global 14.21%는 0.5%p 이내라 N=60 우선, 60/equal/sector 13.86%는 0.64%p 차이) ② 무작위 대조군 500개는 한 번의 백테스트 안 가상 장부로 계산, 실제 A0 점수 복제 장부로 검증 ③ 개발 구간만(2016년 이후는 Stage 0 동결 뒤).
+- 월수익률 추출: `tools/monthly_returns.py` → `results/step4/monthly_returns.csv`(36개 설정 + SPY, 2003-02~2015-12, 155개월).
+- `qc_step5/`: `baseline.py`(새) — 무작위 점수 AR(1) Top-N(500 × base·비용 2배), A0 복제 장부(base·high), 단일 팩터 3개, 유니버스 동일가중·역변동성(비례 비용), RSP·SPY. 로그 `[CONFIG] step=5-baseline`·`[SHADOW]`·`[CAL]`·`[RAND]`·`[SFACT]`·`[BENCH]`·`[SECTOR]`, 차트 `Baseline`·`Bench`(월별 지수).
+- 합성 데이터 시험 통과(φ↑ → 회전율↓, 비용 0이면 base = high, 분할 연속).
+- 실행 순서: ① QUICK_TEST + calibrate(오류 점검) ② 전체 기간 calibrate → φ 결정 ③ 전체 기간 final. 파라미터는 60/equal/global/base 고정.
+- 이후: DSR·PBO(12개 설정, 같은 가중 유니버스 대비), A0 백분위·섹터·회전율 차이 보고.
 
 ## 이후 단계(예정)
-- 5단계: 기준선(무작위 Top-N 500개, RSP, SPY), IC·â 추정(C안 전제), 검증 프로토콜(10장).
+- 5단계 이후: IC·â 추정(C안 전제), Stage 0 동결 → 검증·의사 OOS(2016~) 1회 평가(10장 Q1~Q4).
 
 ## 남은 Stage 0 결정
 - 운용 예산, MDD 판정 기준(제안: 세전 일별), 보유 상한, 브로커·데이터(IBKR 후보, 수수료 요율·소수점·MOC 지원 확인), 손절(−10/−15%/없음)·재진입 5일·익일 MOC(미채택), 세무 조건(미국 시민·한국 거주, kiddie tax 등).
