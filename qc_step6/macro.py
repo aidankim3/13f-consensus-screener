@@ -19,8 +19,8 @@ class MacroSignals:
         self.rows = []                                         # 판정 기록 [(월, econ, sahm, trend, credit, price, usrec)]
 
     def add(self, name, obs_time, value):
-        """obs_time: QC가 넘긴 관측 시각. 관측일 0시(UTC)가 뉴욕 시간으로 바뀌면 전날 19~20시가 되므로(2026-10-01 실행에서
-        USREC 날짜가 하나도 맞지 않아 확인) 12시간을 더해 원래 관측일로 되돌린다. 0시 그대로 와도 같은 날짜가 된다."""
+        """obs_time: QC가 넘긴 시각. 실제 실행(2026-10-01)에서 관측일 + 1일로 들어옴(월별 값은 그 달 2일, 일별은 다음 날).
+        월 판정에는 영향이 없고 일별 값은 하루 늦게 쓰는 셈(보수적). 시간대 변환으로 전날 저녁이 와도 같은 날이 되게 12시간을 더한다."""
         self.obs[name][(obs_time + timedelta(hours=12)).date()] = value
 
     def add_month_close(self, ticker, d, close):
