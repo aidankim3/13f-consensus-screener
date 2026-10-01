@@ -8,7 +8,7 @@ from AlgorithmImports import *
 from datetime import timedelta
 
 from config import *
-from etf import Ledger, ewma_sigma, half_spread, stats
+from etf import Ledger, ewma_sigma, half_spread, stats, window_mdd
 from macro import MacroSignals
 
 
@@ -187,6 +187,13 @@ class ProgramTradingEtfStep6(QCAlgorithm):
                            f"switches={switches} | vs A0 sh {s['sharpe'] - a0['sharpe']:+.2f} cvar/s {red:+.0%} "
                            f"-> Q2-type dev {'pass' if all(q) else 'fail'} | vs A1 sh {s['sharpe'] - a1['sharpe']:+.2f} "
                            f"logg {s['loggrowth'] - a1['loggrowth']:+.2%} | high logg {st[name.replace('_base', '_high')]['loggrowth']:+.2%}")
+            parts = []
+            for label, name in names + [(f"A2{v}", f"A2{v}_{e}_base") for v in A2_VARIANTS]:
+                losses = [(w, window_mdd(self.by_name[name].daily, s0, s1)) for w, s0, s1 in CRISIS_WINDOWS]
+                ok = all(x >= -DD_LIMIT for _, x in losses if x is not None)
+                parts.append(f"{label}:" + "/".join(f"{w}={x:.1%}" if x is not None else f"{w}=na" for w, x in losses)
+                             + ("" if ok else "!"))
+            self.debug(f"[CRISIS {e}] window max loss (limit {DD_LIMIT:.0%}, ! = over) " + " ".join(parts))
             high = [(label, name.replace("_base", "_high")) for label, name in names]
             self.debug(f"[HIGH {e}] cost x2 logg " + " ".join(f"{label}={st[n]['loggrowth']:+.2%}" for label, n in high)
                        + " | mdd " + " ".join(f"{label}={st[n]['mdd']:.1%}" for label, n in high))

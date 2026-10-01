@@ -111,6 +111,18 @@ class Ledger:
         self.costs += cost
 
 
+def window_mdd(daily, start, end):
+    """위기 재현 손실: start~end 안의 일별 가치만으로 계산한 최대 낙폭(구간 안 고점 대비). 구간에 자료가 없으면 None."""
+    values = [v for d, v in daily if start <= d <= end]
+    if len(values) < 2:
+        return None
+    peak, worst = values[0], 0.0
+    for v in values:
+        peak = max(peak, v)
+        worst = min(worst, v / peak - 1)
+    return worst
+
+
 def month_end_series(daily):
     """[(날짜, 가치)] → [(YYYY-MM, 그 달 마지막 값)] 날짜순."""
     out = {}

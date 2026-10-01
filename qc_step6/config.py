@@ -52,3 +52,6 @@ CREDIT_LOOKBACK_DAYS = 182
 PRICE_SMA_MONTHS = 10
 DETECT_PRICE = "SPY"                       # 탐지 정확도 평가의 가격 신호(1998~ 자료가 있는 SPY)
 Q4_ORDER = ("M*", "A1", "B", "A2")       # 사용자 결정(2026-10-01): Q4 단순성 순서(앞이 단순). 다음 후보는 로그 성장률 차 90% CI > 0일 때만
+CRISIS_WINDOWS = (("GFC", date(2008, 9, 1), date(2009, 2, 28)),     # 사용자 결정(2026-10-01): 위기 재현 손실 구간
+                  ("COVID", date(2020, 2, 1), date(2020, 3, 31)),   # 구간 안 고점 대비 최대 손실이 모두 DD_LIMIT 이내여야 함(Q4)
+                  ("RATES", date(2022, 1, 1), date(2022, 10, 31)))  # 개발 구간 실행에서는 GFC만 계산됨
