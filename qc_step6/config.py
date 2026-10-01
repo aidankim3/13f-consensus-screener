@@ -51,3 +51,4 @@ CREDIT_WIDEN = 1.0                         # BAA10Y가 6개월 전보다 1.0%p �
 CREDIT_LOOKBACK_DAYS = 182
 PRICE_SMA_MONTHS = 10
 DETECT_PRICE = "SPY"                       # 탐지 정확도 평가의 가격 신호(1998~ 자료가 있는 SPY)
+Q4_ORDER = ("M*", "A1", "B", "A2")       # 사용자 결정(2026-10-01): Q4 단순성 순서(앞이 단순). 다음 후보는 로그 성장률 차 90% CI > 0일 때만
