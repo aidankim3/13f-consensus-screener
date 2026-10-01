@@ -1,0 +1,24 @@
+2004-06-01 00:00:00 Launching analysis for 22746483758f03aa9c086232025f289c with LEAN Engine v2.5.0.0.18145
+2004-06-01 00:00:00 [CONFIG] step=6-etf equity=RSP,SPY bond=IEF gold=GLD period=2004-06-01~2015-12-31 first_signal=(2004, 12) dd_limit=0.3 sigma_target=0.1 sigma=ewma20/126/min60 B=(0.7, 0.15, 0.15) mstar_step=0.05 costs={'base': 1.0, 'high': 2.0} cash=T-bill1m-0.0009 min_trade=$200 ledgers=96
+2015-12-31 16:30:00 [CASH] T-bill1m days=2768 first=1.99% last=0.08% avg=1.26% | cash cagr=+1.17% months=132
+2015-12-31 16:30:00 [MSTAR RSP] w*=0.4 | 0:-0% 5:-3% 10:-7% 15:-10% 20:-14% 25:-18% 30:-21% 35:-25% 40:-28% 45:-31% 50:-35% 55:-38% 60:-41% 65:-43% 70:-46% 75:-48% 80:-51% 85:-53% 90:-56% 95:-58% 100:-60%
+2015-12-31 16:30:00 [CAND RSP A0] cagr=+8.02% vol=17.2% sh=0.47 mdd=-59.9% mdd/s=3.48 cvar/s=-2.31 logg=+7.72% to=0.03 cost=0.01%/yr
+2015-12-31 16:30:00 [CAND RSP M*40] cagr=+4.24% vol=6.9% sh=0.47 mdd=-28.2% mdd/s=4.09 cvar/s=-2.31 logg=+4.16% to=0.06 cost=0.04%/yr
+2015-12-31 16:30:00 [CAND RSP A1] cagr=+5.96% vol=8.5% sh=0.59 mdd=-24.8% mdd/s=2.93 cvar/s=-1.95 logg=+5.79% to=0.52 cost=0.23%/yr L_avg=0.68 L_min=0.14
+2015-12-31 16:30:00 [CAND RSP B] cagr=+6.50% vol=6.6% sh=0.81 mdd=-13.8% mdd/s=2.10 cvar/s=-1.89 logg=+6.29% to=0.40 cost=0.20%/yr L_avg=0.68 L_min=0.14
+2015-12-31 16:30:00 [Q2dev RSP] A1-A0 sharpe +0.12(>=-0.05 True) cvar/s reduction +15%(>=10% True) mdd/s 2.93 vs 3.48(not larger True) -> dev pass
+2015-12-31 16:30:00 [Q3dev RSP] B-A1 sharpe +0.22(>=+0.05 True) mdd/s 2.10 vs 2.93(not larger True) -> dev pass
+2015-12-31 16:30:00 [Q4dev RSP] within dd 30%: M*40,A1,B | logg A0=+7.72% M*40=+4.16% A1=+5.79% B=+6.29%
+2015-12-31 16:30:00 [HIGH RSP] cost x2 logg A0=+7.70% M*40=+4.11% A1=+5.54% B=+6.07% | mdd A0=-59.9% M*40=-28.3% A1=-25.0% B=-13.9%
+2015-12-31 16:30:00 [MSTAR SPY] w*=0.45 | 0:-0% 5:-3% 10:-6% 15:-9% 20:-13% 25:-16% 30:-19% 35:-23% 40:-26% 45:-29% 50:-31% 55:-34% 60:-37% 65:-40% 70:-42% 75:-44% 80:-47% 85:-49% 90:-51% 95:-53% 100:-55%
+2015-12-31 16:30:00 [CAND SPY A0] cagr=+7.04% vol=14.4% sh=0.46 mdd=-54.8% mdd/s=3.80 cvar/s=-2.33 logg=+6.81% to=0.03 cost=0.00%/yr
+2015-12-31 16:30:00 [CAND SPY M*45] cagr=+4.07% vol=6.5% sh=0.46 mdd=-28.6% mdd/s=4.36 cvar/s=-2.34 logg=+3.99% to=0.05 cost=0.03%/yr
+2015-12-31 16:30:00 [CAND SPY A1] cagr=+5.85% vol=8.1% sh=0.60 mdd=-23.1% mdd/s=2.85 cvar/s=-2.02 logg=+5.69% to=0.53 cost=0.17%/yr L_avg=0.72 L_min=0.16
+2015-12-31 16:30:00 [CAND SPY B] cagr=+6.41% vol=6.4% sh=0.83 mdd=-13.9% mdd/s=2.19 cvar/s=-1.91 logg=+6.21% to=0.41 cost=0.16%/yr L_avg=0.72 L_min=0.16
+2015-12-31 16:30:00 [Q2dev SPY] A1-A0 sharpe +0.13(>=-0.05 True) cvar/s reduction +13%(>=10% True) mdd/s 2.85 vs 3.80(not larger True) -> dev pass
+2015-12-31 16:30:00 [Q3dev SPY] B-A1 sharpe +0.23(>=+0.05 True) mdd/s 2.19 vs 2.85(not larger True) -> dev pass
+2015-12-31 16:30:00 [Q4dev SPY] within dd 30%: M*45,A1,B | logg A0=+6.81% M*45=+3.99% A1=+5.69% B=+6.21%
+2015-12-31 16:30:00 [HIGH SPY] cost x2 logg A0=+6.81% M*45=+3.96% A1=+5.51% B=+6.05% | mdd A0=-54.8% M*45=-28.7% A1=-23.4% B=-14.0%
+2015-12-31 16:30:00 Algorithm Id:(22746483758f03aa9c086232025f289c) completed in 4.80 seconds at 7k data points per second. Processing total of 35,051 data points.
+2015-12-31 16:30:00 Due to numerical precision issues in the factor file, data for the following symbols was adjust to a later starting date: [GLD, 11/17/2004]
+2015-12-31 16:30:00 The starting dates for the following symbols have been adjusted to match their map files first date: [GLD, 2004-11-18]

@@ -20,6 +20,7 @@ DD_LIMIT = 0.30                           # 계좌 최대 낙폭 한도(세전·
 SIGMA_TARGET = 0.10                       # A1 목표 변동성(연)
 B_WEIGHTS = (0.70, 0.15, 0.15)            # B = A1 70% + IEF 15% + GLD 15%
 MSTAR_STEP = 0.05                         # M* 주식 비중 탐색 간격(5%p)
+MSTAR_FROZEN = {"RSP": 0.40, "SPY": 0.45}  # 2026-10-01 개발 구간(Upgraded Blue Anguilline)에서 MDD ≤ 30%인 최대 비중, 동결(계획서 10장)
 
 # --- A1 변동성 예측 (계획서 7장: 포트폴리오 일간 수익률 EWMA, 반감기 20거래일, 월 1회만 배수 변경) ---
 SIGMA_HALF_LIFE = 20
