@@ -1,0 +1,37 @@
+1998-01-02 00:00:00 Launching analysis for d127e367747e635502823b806cc35ed9 with LEAN Engine v2.5.0.0.18145
+1998-01-02 00:00:00 [CONFIG] step=7-final equity=RSP,SPY bond=IEF gold=GLD period=1998-01-02~2026-09-30 first_signal=(2004, 12) dd_limit=0.3 sigma_target=0.1 sigma=ewma20/126/min60 B=(0.7, 0.15, 0.15) mstar_step=0.05 costs={'base': 1.0, 'high': 2.0} cash=T-bill1m-0.0009->SGOV@2020-07-01 mstar={'RSP': 0.4, 'SPY': 0.45} q4=('M*', 'A1', 'B', 'A2') periods=['DEV', 'VAL', 'OOS'] min_trade=$200 ledgers=100
+2026-07-03 00:00:00 [MACRO] fred obs UNRATE=342 BAA10Y=7123 USREC=343 | first UNRATE=1998-01-02 BAA10Y=1998-01-03 USREC=1998-01-02 | detection (lag: monthly <= M-1, daily <= signal)
+2026-07-03 00:00:00 [DETECT] months=330 (1999, 1)~(2026, 6) recession_months=28 episodes=2001-04~2001-11,2008-01~2009-06,2020-03~2020-04
+2026-07-03 00:00:00 [DETECT] trend: hit=27/28 false=85/302 delay(mo)=-7,-6,1
+2026-07-03 00:00:00 [DETECT] sahm: hit=20/28 false=41/302 delay(mo)=4,2,2
+2026-07-03 00:00:00 [DETECT] credit: hit=12/28 false=1/302 delay(mo)=miss,0,0
+2026-07-03 00:00:00 [DETECT] price: hit=27/28 false=55/302 delay(mo)=-7,-1,-10
+2026-07-03 00:00:00 [DETECT] A2a: hit=26/28 false=25/302 delay(mo)=-7,-1,1
+2026-07-03 00:00:00 [DETECT] A2b: hit=27/28 false=25/302 delay(mo)=-7,-1,0
+2026-07-03 00:00:00 [CASH] T-bill1m days=5407 first=1.99% last=3.67% avg=1.74% | SGOV days=1508 (from 2020-07-01, first bar 2020-05-28) | cash cagr=+1.66% months=259 last day=2026-07-02
+2026-07-03 00:00:00 [PERIOD RSP A0] ALL cagr=+10.01% sh=0.56 mdd=-59.9% logg=+9.54% | cagr/sh/mdd DEV=+8.0%/0.47/-60% VAL=+15.3%/0.89/-39% OOS=+8.0%/0.32/-21% 16+=+12.1%/0.65/-39%
+2026-07-03 00:00:00 [PERIOD RSP M*] ALL cagr=+5.27% sh=0.55 mdd=-28.2% logg=+5.14% | cagr/sh/mdd DEV=+4.2%/0.47/-28% VAL=+6.8%/0.88/-17% OOS=+5.8%/0.31/-9% 16+=+6.4%/0.64/-17%
+2026-07-03 00:00:00 [PERIOD RSP A1] ALL cagr=+6.49% sh=0.54 mdd=-24.8% logg=+6.29% | cagr/sh/mdd DEV=+6.0%/0.59/-25% VAL=+7.5%/0.68/-23% OOS=+6.4%/0.28/-14% 16+=+7.1%/0.50/-23%
+2026-07-03 00:00:00 [PERIOD RSP B] ALL cagr=+6.89% sh=0.73 mdd=-16.4% logg=+6.67% | cagr/sh/mdd DEV=+6.5%/0.81/-14% VAL=+7.4%/0.92/-16% OOS=+7.2%/0.39/-12% 16+=+7.3%/0.65/-16%
+2026-07-03 00:00:00 [PERIOD RSP A2] ALL cagr=+10.03% sh=0.62 mdd=-39.0% logg=+9.56% | cagr/sh/mdd DEV=+10.4%/0.75/-23% VAL=+12.5%/0.74/-39% OOS=+6.1%/0.21/-21% 16+=+9.7%/0.52/-39%
+2026-07-03 00:00:00 [Q2 RSP A1] 16+ sh -0.15(>=-0.05 False) cvar/s red -3% mdd/s 2.24 vs 2.38(False) | red by period DEV=+15% VAL=-7% OOS=+2%(False) -> FAIL
+2026-07-03 00:00:00 [Q2 RSP A2] 16+ sh -0.13(>=-0.05 False) cvar/s red -3% mdd/s 2.44 vs 2.38(False) | red by period DEV=+18% VAL=-1% OOS=-5%(False) -> FAIL
+2026-07-03 00:00:00 [Q3 RSP B] 16+ sh +0.15(>=+0.05 True) mdd/s 2.05 vs 2.24(True) | sh diff by period DEV=+0.22 VAL=+0.24 OOS=+0.11(True) -> PASS
+2026-07-03 00:00:00 [Q4 RSP] limit 30% | A0:mdd=-59.9% GFC=-47.7%/COVID=-39.0%/RATES=-21.4% q=ok lim=over | M*:mdd=-28.2% GFC=-21.4%/COVID=-16.7%/RATES=-8.5% q=ok lim=ok | A1:mdd=-24.8% GFC=-13.8%/COVID=-23.2%/RATES=-11.2% q=fail lim=ok | B:mdd=-16.4% GFC=-10.5%/COVID=-16.4%/RATES=-11.6% q=ok lim=ok | A2:mdd=-39.0% GFC=-9.3%/COVID=-39.0%/RATES=-21.4% q=fail lim=over
+2026-07-03 00:00:00 [Q4 RSP] survivors=M*,B | B-M* +1.53% [+0.01%,+3.05%] n=259 -> move => FINAL B
+2026-07-03 00:00:00 [HIGH RSP] cost x2 logg A0=+9.53% M*=+5.10% A1=+6.06% B=+6.47% A2=+9.43% | mdd A0=-59.9% M*=-28.3% A1=-25.0% B=-16.4% A2=-39.0%
+2026-07-03 00:00:00 [PERIOD SPY A0] ALL cagr=+10.80% sh=0.66 mdd=-54.8% logg=+10.25% | cagr/sh/mdd DEV=+7.0%/0.46/-55% VAL=+17.2%/1.11/-34% OOS=+11.8%/0.54/-24% 16+=+14.8%/0.85/-34%
+2026-07-03 00:00:00 [PERIOD SPY M*] ALL cagr=+5.98% sh=0.66 mdd=-28.6% logg=+5.80% | cagr/sh/mdd DEV=+4.1%/0.46/-29% VAL=+8.2%/1.11/-16% OOS=+7.7%/0.53/-11% 16+=+8.0%/0.85/-16%
+2026-07-03 00:00:00 [PERIOD SPY A1] ALL cagr=+7.69% sh=0.70 mdd=-23.1% logg=+7.41% | cagr/sh/mdd DEV=+5.9%/0.60/-23% VAL=+10.1%/0.98/-20% OOS=+9.0%/0.54/-13% 16+=+9.6%/0.79/-20%
+2026-07-03 00:00:00 [PERIOD SPY B] ALL cagr=+7.72% sh=0.88 mdd=-14.4% logg=+7.44% | cagr/sh/mdd DEV=+6.4%/0.83/-14% VAL=+9.1%/1.20/-14% OOS=+9.1%/0.62/-12% 16+=+9.1%/0.92/-14%
+2026-07-03 00:00:00 [PERIOD SPY A2] ALL cagr=+10.98% sh=0.75 mdd=-33.7% logg=+10.42% | cagr/sh/mdd DEV=+10.0%/0.81/-20% VAL=+15.4%/1.00/-34% OOS=+7.6%/0.32/-24% 16+=+12.0%/0.70/-34%
+2026-07-03 00:00:00 [Q2 SPY A1] 16+ sh -0.06(>=-0.05 False) cvar/s red +2% mdd/s 2.13 vs 2.23(False) | red by period DEV=+13% VAL=-6% OOS=+17%(True) -> FAIL
+2026-07-03 00:00:00 [Q2 SPY A2] 16+ sh -0.15(>=-0.05 False) cvar/s red -4% mdd/s 2.32 vs 2.23(False) | red by period DEV=+16% VAL=-0% OOS=-9%(False) -> FAIL
+2026-07-03 00:00:00 [Q3 SPY B] 16+ sh +0.13(>=+0.05 True) mdd/s 1.92 vs 2.13(True) | sh diff by period DEV=+0.23 VAL=+0.22 OOS=+0.08(True) -> PASS
+2026-07-03 00:00:00 [Q4 SPY] limit 30% | A0:mdd=-54.8% GFC=-41.2%/COVID=-33.6%/RATES=-24.5% q=ok lim=over | M*:mdd=-28.6% GFC=-20.6%/COVID=-16.1%/RATES=-11.2% q=ok lim=ok | A1:mdd=-23.1% GFC=-13.2%/COVID=-20.3%/RATES=-12.6% q=fail lim=ok | B:mdd=-14.4% GFC=-9.7%/COVID=-14.4%/RATES=-12.5% q=ok lim=ok | A2:mdd=-33.7% GFC=-7.2%/COVID=-33.7%/RATES=-24.5% q=fail lim=over
+2026-07-03 00:00:00 [Q4 SPY] survivors=M*,B | B-M* +1.63% [+0.17%,+3.10%] n=259 -> move => FINAL B
+2026-07-03 00:00:00 [HIGH SPY] cost x2 logg A0=+10.25% M*=+5.77% A1=+7.21% B=+7.26% A2=+10.31% | mdd A0=-54.8% M*=-28.7% A1=-23.4% B=-14.4% A2=-33.7%
+2026-07-03 00:00:00 [FINAL] RSP B vs SPY B: logg diff -0.77% 90%CI [-1.56%,+0.02%] n=259 -> SPY B (rule: RSP only if CI > 0)
+2026-07-03 00:00:00 Algorithm Id:(d127e367747e635502823b806cc35ed9) completed in 13.68 seconds at 7k data points per second. Processing total of 91,490 data points.
+2026-07-03 00:00:00 Due to numerical precision issues in the factor file, data for the following symbols was adjust to a later starting date: [RSP, 4/29/2003], [SGOV, 5/27/2020], [IEF, 7/25/2002], [GLD, 11/17/2004], [SPY, 1/1/1998]
+2026-07-03 00:00:00 The starting dates for the following symbols have been adjusted to match their map files first date: [RSP, 2003-04-30], [SGOV, 2020-05-28], [IEF, 2002-07-26], [GLD, 2004-11-18], [SPY, 1998-01-02]
