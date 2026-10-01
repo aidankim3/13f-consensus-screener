@@ -3,7 +3,7 @@ from datetime import date
 
 # --- 구간 (계획서 10장: RSP 대체 분기의 개발 구간은 2005~2015, B는 GLD 설정 뒤 2004-12부터) ---
 DEV_PERIOD_LAST_DAY = date(2015, 12, 31)  # 2016년 이후(검증·의사 OOS)는 Stage 0 동결 전 사용 금지
-START_DATE = date(2004, 6, 1)             # σ̂·스프레드 준비 구간(평가는 FIRST_SIGNAL 월말부터)
+START_DATE = date(1998, 1, 2)             # A2 탐지 정확도(1999~)·σ̂·스프레드 준비. 장부 평가는 FIRST_SIGNAL 월말부터(이전 결과와 같음)
 END_DATE = date(2015, 12, 31)
 FIRST_SIGNAL = (2004, 12)                 # 첫 신호 = 2004-12 마지막 거래일, 첫 체결 = 2005-01 첫 거래일
 INITIAL_CASH = 20_000                     # 계획서 0장: 초기 자본(달러)
@@ -38,3 +38,16 @@ IB_FEE_PER_SHARE = 0.005                  # LEAN IB: 주당 $0.005, 최소 $1, �
 IB_MIN_FEE = 1.0
 IB_MAX_FEE_RATE = 0.005
 MIN_TRADE_VALUE = 200.0                   # 계획서 6·9장: $200 미만 조정 생략
+
+# --- A2 경기 국면 배분 (사용자 확정 2026-10-01, 결과 보기 전. NOTES.md) ---
+# 침체 = 경기 악화(실업률 > 12개월 평균 또는 Sahm) 그리고 주가 추세 악화(월말 종가 < 10개월 평균). 변형 b는 경기 악화에 신용 확대 추가.
+A2_VARIANTS = ("a", "b")
+A2_RECESSION_WEIGHTS = {"equity": 0.20, BOND_TICKER: 0.40}   # 나머지 40%는 현금. 확장 국면은 주식 100%
+FRED_SERIES = ("UNRATE", "BAA10Y", "USREC")  # USREC(NBER 침체 월)는 탐지 정확도 평가에만 사용
+UNRATE_SMA_MONTHS = 12
+SAHM_THRESHOLD = 0.5                       # 3개월 평균 − 직전 12개월의 3개월 평균 최저 ≥ 0.5%p
+SAHM_LOOKBACK = 12
+CREDIT_WIDEN = 1.0                         # BAA10Y가 6개월 전보다 1.0%p 이상 확대
+CREDIT_LOOKBACK_DAYS = 182
+PRICE_SMA_MONTHS = 10
+DETECT_PRICE = "SPY"                       # 탐지 정확도 평가의 가격 신호(1998~ 자료가 있는 SPY)

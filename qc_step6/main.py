@@ -2,12 +2,14 @@
 from AlgorithmImports import *
 # endregion
 # 1세대 프로그램 매매 모델 — 6단계: Q1 불합격(5단계)으로 A0 자리에 ETF(RSP·SPY, 사용자 결정 2026-10-01)를 넣고
-# 계획서 7·10장의 M*(주식 + 현금 고정 혼합)·A1(변동성 제어)·B(A1 70 + IEF 15 + GLD 15)를 개발 구간 2005~2015에서 계산한다.
+# 계획서 7·10장의 M*(주식 + 현금 고정 혼합)·A1(변동성 제어)·B(A1 70 + IEF 15 + GLD 15)와 A2(경기 국면 배분, 2026-10-01 추가)를
+# 개발 구간 2005~2015에서 계산한다. A2 신호의 침체 탐지 정확도는 1999~2015 NBER 침체 월과 비교한다.
 # 실제 주문은 내지 않고 가상 장부로만 계산한다(ETF 몇 개라 LEAN 체결과 차이가 작음, NOTES.md). 출력·확인 항목은 NOTES.md.
 from datetime import timedelta
 
 from config import *
 from etf import Ledger, ewma_sigma, half_spread, stats
+from macro import MacroSignals
 
 
 class ProgramTradingEtfStep6(QCAlgorithm):
@@ -27,6 +29,13 @@ class ProgramTradingEtfStep6(QCAlgorithm):
         except Exception as err:
             self.debug(f"[WARN] treasury yield data unavailable: {err} -> cash rate 0 (fee only)")
         self.rate, self.rates = None, []
+        self.macro = MacroSignals()
+        self.fred = {}
+        for name in FRED_SERIES:
+            try:
+                self.fred[self.add_data(Fred, name, Resolution.DAILY).symbol] = name
+            except Exception as err:
+                self.debug(f"[WARN] FRED {name} unavailable: {err}")
         self.bars = {t: [] for t in self.tickers}          # [(날짜, 고가, 저가, 종가)]
         self.last_close = {}
         self.prev_day, self.started = None, False
@@ -36,6 +45,7 @@ class ProgramTradingEtfStep6(QCAlgorithm):
             for e in EQUITY_TICKERS:
                 self.ledgers += [Ledger(f"{k}_{e}_{cost}", k, e, mult) for k in ("A0", "A1", "B")]
                 self.ledgers += [Ledger(f"M{int(round(w * 100))}_{e}_{cost}", "M", e, mult, w) for w in grid]
+                self.ledgers += [Ledger(f"A2{v}_{e}_{cost}", "A2", e, mult, v) for v in A2_VARIANTS]
         self.cash_ledger = Ledger("CASH", "M", EQUITY_TICKERS[0], 0.0, 0.0)
         self.by_name = {l.name: l for l in self.ledgers}
         self.debug(f"[CONFIG] step=6-etf equity={','.join(EQUITY_TICKERS)} bond={BOND_TICKER} gold={GOLD_TICKER} "
@@ -50,6 +60,14 @@ class ProgramTradingEtfStep6(QCAlgorithm):
                 for item in data.get(USTreasuryYieldCurveRate).values():
                     if item.one_month is not None:
                         self.rate = float(item.one_month)
+            except Exception:
+                pass
+        if self.fred:
+            try:
+                for item in data.get(Fred).values():
+                    name = self.fred.get(item.symbol)
+                    if name:
+                        self.macro.add(name, item.time.date(), float(item.value))
             except Exception:
                 pass
         day, got = None, {}
@@ -74,8 +92,14 @@ class ProgramTradingEtfStep6(QCAlgorithm):
                 ledger.cash *= 1 + rf
             if self.rate is not None:
                 self.rates.append(self.rate)
-        if prev is not None and (day.year, day.month) != (prev.year, prev.month) \
-                and (prev.year, prev.month) >= FIRST_SIGNAL and all(t in self.last_close for t in self.tickers):
+        new_month = prev is not None and (day.year, day.month) != (prev.year, prev.month)
+        if new_month:                                          # 월말(prev) 종가 기록과 A2 탐지 기록(1999~)
+            for t in self.tickers:
+                closes = [b for b in self.bars[t] if b[0] <= prev]
+                if closes:
+                    self.macro.add_month_close(t, prev, closes[-1][3])
+            self.macro.record(prev)
+        if new_month and (prev.year, prev.month) >= FIRST_SIGNAL and all(t in self.last_close for t in self.tickers):
             self._rebalance(prev, day)
         if self.started:
             prices = dict(self.last_close)
@@ -94,21 +118,25 @@ class ProgramTradingEtfStep6(QCAlgorithm):
                 ledger.daily.append((signal, float(INITIAL_CASH)))
         halves = {t: half_spread([(b[1], b[2], b[3]) for b in upto[t]]) for t in self.tickers}
         sigmas = {e: ewma_sigma([b[3] for b in upto[e]]) for e in EQUITY_TICKERS}
+        recession = {(e, v): self.macro.regime(e, signal, v) for e in EQUITY_TICKERS for v in A2_VARIANTS}
         for ledger in self.ledgers:
-            ledger.rebalance(ledger.targets(sigmas[ledger.equity]), sig_prices, exec_prices, halves)
+            rec = recession.get((ledger.equity, ledger.weight)) if ledger.kind == "A2" else False
+            ledger.rebalance(ledger.targets(sigmas[ledger.equity], rec), sig_prices, exec_prices, halves)
         if (signal.year, signal.month) > FIRST_SIGNAL:
             self._plot(sig_prices)
 
     def _plot(self, prices):
-        """월말 지수(1000에서 시작): 기본 비용 A0·A1·B(주식 ETF별), 현금, IEF·GLD 조정가. 차트 시리즈 9개(한도 10개).
+        """월말 지수(1000에서 시작): 기본 비용 A0·A1·B·A2a(주식 ETF별), 현금. 차트 시리즈 9개(한도 10개).
         rebalance 시점에는 daily의 마지막 값이 신호일(월말) 값이다."""
-        for name in [f"{k}_{e}_base" for e in EQUITY_TICKERS for k in ("A0", "A1", "B")]:
+        for name in [f"{k}_{e}_base" for e in EQUITY_TICKERS for k in ("A0", "A1", "B", "A2a")]:
             self.plot("ETF", name.replace("_base", ""), self.by_name[name].daily[-1][1] / INITIAL_CASH * 1000)
         self.plot("ETF", "CASH", self.cash_ledger.daily[-1][1] / INITIAL_CASH * 1000)
-        for t in (BOND_TICKER, GOLD_TICKER):
-            self.plot("ETF", t, prices[t])
 
     def on_end_of_algorithm(self):
+        counts = " ".join(f"{n}={len(v)}" for n, v in self.macro.obs.items())
+        self.debug(f"[MACRO] fred obs {counts} | detection (lag: monthly <= M-1, daily <= signal)")
+        for line in self.macro.detection_report():
+            self.debug(f"[DETECT] {line}")
         if self.started:
             self._plot(dict(self.last_close))              # 마지막 달(마지막 거래일 = 월말)
         cash = self.cash_ledger.daily
@@ -147,6 +175,18 @@ class ProgramTradingEtfStep6(QCAlgorithm):
             within = [label for label, name in names if st[name]["mdd"] >= -DD_LIMIT]
             self.debug(f"[Q4dev {e}] within dd {DD_LIMIT:.0%}: {','.join(within) or 'none'} | logg " +
                        " ".join(f"{label}={st[name]['loggrowth']:+.2%}" for label, name in names))
+            for v in A2_VARIANTS:
+                name = f"A2{v}_{e}_base"
+                l, s = self.by_name[name], st[name]
+                avg_pv = sum(x for _, x in l.daily) / len(l.daily)
+                switches = sum(1 for x, y in zip(l.lever, l.lever[1:]) if x != y)
+                red = (abs(a0["cvar_sigma"]) - abs(s["cvar_sigma"])) / abs(a0["cvar_sigma"]) if a0["cvar_sigma"] else 0.0
+                q = [s["sharpe"] - a0["sharpe"] >= -0.05, red >= 0.10, s["mdd_sigma"] <= a0["mdd_sigma"]]
+                self.debug(f"[CAND {e} A2{v}] {fmt(s)} to={l.traded / avg_pv / s['years'] / 2:.2f} "
+                           f"cost={l.costs / avg_pv / s['years']:.2%}/yr recession_months={int(sum(l.lever))}/{len(l.lever)} "
+                           f"switches={switches} | vs A0 sh {s['sharpe'] - a0['sharpe']:+.2f} cvar/s {red:+.0%} "
+                           f"-> Q2-type dev {'pass' if all(q) else 'fail'} | vs A1 sh {s['sharpe'] - a1['sharpe']:+.2f} "
+                           f"logg {s['loggrowth'] - a1['loggrowth']:+.2%} | high logg {st[name.replace('_base', '_high')]['loggrowth']:+.2%}")
             high = [(label, name.replace("_base", "_high")) for label, name in names]
             self.debug(f"[HIGH {e}] cost x2 logg " + " ".join(f"{label}={st[n]['loggrowth']:+.2%}" for label, n in high)
                        + " | mdd " + " ".join(f"{label}={st[n]['mdd']:.1%}" for label, n in high))

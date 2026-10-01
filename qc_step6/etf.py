@@ -60,9 +60,14 @@ class Ledger:
     def value(self, prices):
         return self.cash + sum(q * prices[t] for t, q in self.shares.items())
 
-    def targets(self, sigma):
-        """목표 비중 {티커: w}. 나머지는 현금. sigma = 주식 ETF의 EWMA σ̂(연)."""
+    def targets(self, sigma, recession=False):
+        """목표 비중 {티커: w}. 나머지는 현금. sigma = 주식 ETF의 EWMA σ̂(연), recession = A2 침체 판정."""
         e = self.equity
+        if self.kind == "A2":
+            self.lever.append(1.0 if recession else 0.0)       # A2는 침체 판정 기록(1 = 침체)
+            if not recession:
+                return {e: 1.0}
+            return {(e if k == "equity" else k): w for k, w in A2_RECESSION_WEIGHTS.items()}
         if self.kind == "A0":
             return {e: 1.0}
         if self.kind == "M":
