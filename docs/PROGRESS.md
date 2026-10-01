@@ -211,6 +211,7 @@
 - **사용자 결정(2026-10-01): E 제외하고 1세대 동결 → 최종 평가 코드 `qc_step7/`** (계획서 2장 개정 5, 설계 `qc_step7/NOTES.md`).
   - 2005~2026-09-30 한 번 실행, 구간 DEV 2005~2015·VAL 2016~2021·OOS 2022~. 현금은 2020-07부터 실제 SGOV. A2 = 변형 a.
   - 판정: Q2(A1·A2 vs A0)·Q3(B vs A1) 세 구간 기준, Q4 한도(MDD·위기 손실 30%) + 순차 90% CI(M* < A1 < B < A2), RSP vs SPY(CI > 0이면 RSP, 아니면 SPY).
+- 1세대 결과·수익 정리: `docs/GEN1_RESULTS.md`
 - **1세대 최종 평가 결과(Measured Light Brown Koala): `results/step7/measured-light-brown-koala/REVIEW.md`** — QC 자료가 2026-07-02까지라 OOS = 2022-01~2026-07(259개월).
   - Q2: A1·A2 모두 RSP·SPY에서 불합격(2016+ 샤프가 A0보다 낮고 CVaR/σ 감소 없음). A2는 COVID에서 −34~−39%(월별 지표가 급락을 못 따라감) → 개발 구간 우위는 2008년 한 번이었음.
   - Q3: B가 RSP·SPY 모두 합격(세 구간 모두 A1보다 샤프 +0.08~0.24).
