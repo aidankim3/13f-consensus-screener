@@ -18,8 +18,10 @@ class MacroSignals:
         self.month_close = {}                                  # {티커: {(연,월): 월말 조정 종가}}
         self.rows = []                                         # 판정 기록 [(월, econ, sahm, trend, credit, price, usrec)]
 
-    def add(self, name, obs_date, value):
-        self.obs[name][obs_date] = value
+    def add(self, name, obs_time, value):
+        """obs_time: QC가 넘긴 관측 시각. 관측일 0시(UTC)가 뉴욕 시간으로 바뀌면 전날 19~20시가 되므로(2026-10-01 실행에서
+        USREC 날짜가 하나도 맞지 않아 확인) 12시간을 더해 원래 관측일로 되돌린다. 0시 그대로 와도 같은 날짜가 된다."""
+        self.obs[name][(obs_time + timedelta(hours=12)).date()] = value
 
     def add_month_close(self, ticker, d, close):
         self.month_close.setdefault(ticker, {})[month_key(d)] = close
@@ -75,8 +77,12 @@ class MacroSignals:
     def record(self, signal):
         """탐지 정확도용: 신호월의 각 신호 상태와 NBER 침체 여부(USREC, 사후 확정 값 — 평가에만 사용)."""
         trend, sahm = self.econ(signal)
-        usrec = self.obs["USREC"].get(date(signal.year, signal.month, 1))
+        usrec = next((v for d, v in self.obs["USREC"].items() if month_key(d) == month_key(signal)), None)
         self.rows.append((month_key(signal), trend, sahm, self.credit(signal), self.price_down(DETECT_PRICE, signal), usrec))
+
+    def first_dates(self):
+        """날짜 보정 확인용: 시리즈별 첫 관측일(월별 시리즈는 1일이어야 정상)."""
+        return " ".join(f"{n}={min(v) if v else 'none'}" for n, v in self.obs.items())
 
     def detection_report(self):
         """신호별: 침체 월 적중률, 비침체 월 오신호율, 침체 에피소드별 첫 신호 지연(개월)."""

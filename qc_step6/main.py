@@ -67,7 +67,7 @@ class ProgramTradingEtfStep6(QCAlgorithm):
                 for item in data.get(Fred).values():
                     name = self.fred.get(item.symbol)
                     if name:
-                        self.macro.add(name, item.time.date(), float(item.value))
+                        self.macro.add(name, item.time, float(item.value))
             except Exception:
                 pass
         day, got = None, {}
@@ -134,7 +134,7 @@ class ProgramTradingEtfStep6(QCAlgorithm):
 
     def on_end_of_algorithm(self):
         counts = " ".join(f"{n}={len(v)}" for n, v in self.macro.obs.items())
-        self.debug(f"[MACRO] fred obs {counts} | detection (lag: monthly <= M-1, daily <= signal)")
+        self.debug(f"[MACRO] fred obs {counts} | first {self.macro.first_dates()} | detection (lag: monthly <= M-1, daily <= signal)")
         for line in self.macro.detection_report():
             self.debug(f"[DETECT] {line}")
         if self.started:
