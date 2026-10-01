@@ -111,6 +111,69 @@ class Ledger:
         self.costs += cost
 
 
+class ELedger(Ledger):
+    """운용안 E(사용자 결정 2026-10-01): 월별 구성 + 주식 ETF 고점 대비 손절(장중) + 매주 첫 거래일 재매수.
+    - 고점 = (재)매수 뒤 최고 종가. 장중 최저가 ≤ 고점 × (1 − E_TRAIL_STOP)이면 주식 ETF 전량 매도(시가가 이미 아래면 시가).
+    - 복귀는 두 가지(사용자 결정 2026-10-01): ① 월초 리밸런싱 — 조건 없이 그달 목표 비중으로 복귀,
+      ② 주초 재매수 — 매주 첫 거래일, 직전 거래일 종가 > 판 가격이면 그달 주식 목표 비중까지 그날 종가로 매수.
+    - 손절 당일에는 어느 쪽으로도 복귀하지 않음(같은 날 팔고 다시 사지 않음)."""
+
+    def __init__(self, name, kind, equity, mult, weight=None):
+        super().__init__(name, kind, equity, mult, weight)
+        self.stopped, self.sell_price, self.stop_day, self.peak = False, None, None, None
+        self.month_targets = {}
+        self.stops = self.refills = self.month_returns = self.out_days = 0
+        self.today = None
+
+    def targets(self, sigma, recession=False):
+        weights = super().targets(sigma, recession)
+        self.month_targets = dict(weights)
+        if self.stopped and self.stop_day == self.today:      # 오늘 손절 → 이번 월초는 주식 제외
+            return {t: w for t, w in weights.items() if t != self.equity}
+        if self.stopped:                                       # 월초 복귀(조건 없음)
+            self.stopped = False
+            self.month_returns += 1
+        return weights
+
+    def check_stop(self, day, bar, half):
+        """bar = 오늘 (시가, 고가, 저가, 종가). 고점은 어제까지의 종가."""
+        q = self.shares.get(self.equity, 0.0)
+        if q <= 0 or self.peak is None:
+            return
+        stop = self.peak * (1 - E_TRAIL_STOP)
+        if bar[2] <= stop:
+            price = bar[0] if bar[0] < stop else stop
+            self._fill(self.equity, -q, price, half)
+            self.stopped, self.sell_price, self.stop_day, self.peak = True, price, day, None
+            self.stops += 1
+
+    def try_refill(self, day, prev_close):
+        """주간 재매수 조건 확인. 오늘 손절된 경우는 제외. 반환: 재매수 여부(실제 매수는 호출 쪽에서)."""
+        if self.stopped and self.stop_day != day and prev_close > self.sell_price:
+            self.stopped = False
+            self.refills += 1
+            return True
+        return False
+
+    def buy_equity(self, sig_prices, exec_prices, half):
+        e = self.equity
+        target = self.month_targets.get(e, 0.0) * self.value(sig_prices)
+        delta = target - self.shares.get(e, 0.0) * sig_prices[e]
+        if delta >= MIN_TRADE_VALUE:
+            q = delta / sig_prices[e]
+            spend = q * exec_prices[e]
+            if spend > self.cash > 0:
+                q *= self.cash / spend
+            if q > 0:
+                self._fill(e, q, exec_prices[e], half)
+
+    def after_close(self, close):
+        if self.shares.get(self.equity, 0.0) > 0:
+            self.peak = close if self.peak is None else max(self.peak, close)
+        if self.stopped:
+            self.out_days += 1
+
+
 def window_mdd(daily, start, end):
     """위기 재현 손실: start~end 안의 일별 가치만으로 계산한 최대 낙폭(구간 안 고점 대비). 구간에 자료가 없으면 None."""
     values = [v for d, v in daily if start <= d <= end]

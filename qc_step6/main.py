@@ -8,7 +8,7 @@ from AlgorithmImports import *
 from datetime import timedelta
 
 from config import *
-from etf import Ledger, ewma_sigma, half_spread, stats, window_mdd
+from etf import ELedger, Ledger, ewma_sigma, half_spread, stats, window_mdd
 from macro import MacroSignals
 
 
@@ -46,7 +46,13 @@ class ProgramTradingEtfStep6(QCAlgorithm):
                 self.ledgers += [Ledger(f"{k}_{e}_{cost}", k, e, mult) for k in ("A0", "A1", "B")]
                 self.ledgers += [Ledger(f"M{int(round(w * 100))}_{e}_{cost}", "M", e, mult, w) for w in grid]
                 self.ledgers += [Ledger(f"A2{v}_{e}_{cost}", "A2", e, mult, v) for v in A2_VARIANTS]
+                for k in E_KINDS:                               # 운용안 E 변형
+                    kind, weight = ("A2", "a") if k == "A2a" else (k, MSTAR_FROZEN[e] if k == "M" else None)
+                    self.ledgers.append(ELedger(f"E{k}_{e}_{cost}", kind, e, mult, weight))
         self.cash_ledger = Ledger("CASH", "M", EQUITY_TICKERS[0], 0.0, 0.0)
+        self.e_ledgers = [l for l in self.ledgers if isinstance(l, ELedger)]
+        self.today = {}
+        self.halves = {}
         self.by_name = {l.name: l for l in self.ledgers}
         self.debug(f"[CONFIG] step=6-etf equity={','.join(EQUITY_TICKERS)} bond={BOND_TICKER} gold={GOLD_TICKER} "
                    f"period={START_DATE}~{END_DATE} first_signal={FIRST_SIGNAL} dd_limit={DD_LIMIT} "
@@ -76,6 +82,7 @@ class ProgramTradingEtfStep6(QCAlgorithm):
                 bar = data.bars[s]
                 day = (bar.end_time - timedelta(minutes=1)).date()
                 got[t] = (float(bar.high), float(bar.low), float(bar.close))
+                self.today[t] = (float(bar.open), float(bar.high), float(bar.low), float(bar.close))
         if not got or day is None or (self.prev_day is not None and day <= self.prev_day):
             return
         for t, (h, l, c) in got.items():
@@ -92,20 +99,44 @@ class ProgramTradingEtfStep6(QCAlgorithm):
                 ledger.cash *= 1 + rf
             if self.rate is not None:
                 self.rates.append(self.rate)
+        if self.started:                                       # 운용안 E: 장중 손절(어제까지 고점 기준)
+            for ledger in self.e_ledgers:
+                ledger.today = day
+                bar = self.today.get(ledger.equity)
+                if bar and self.today_is(ledger.equity, day):
+                    ledger.check_stop(day, bar, self.halves.get(ledger.equity, DEFAULT_HALF_SPREAD))
         new_month = prev is not None and (day.year, day.month) != (prev.year, prev.month)
+        new_week = prev is not None and day.isocalendar()[:2] != prev.isocalendar()[:2]
+        refill = []
+        if self.started and new_week:                          # 운용안 E: 매주 첫 거래일 재매수 조건
+            for ledger in self.e_ledgers:
+                closes = [b[3] for b in self.bars[ledger.equity] if b[0] < day]
+                if closes and ledger.try_refill(day, closes[-1]):
+                    refill.append(ledger)
         if new_month:                                          # 월말(prev) 종가 기록과 A2 탐지 기록(1999~)
             for t in self.tickers:
                 closes = [b for b in self.bars[t] if b[0] <= prev]
                 if closes:
                     self.macro.add_month_close(t, prev, closes[-1][3])
             self.macro.record(prev)
-        if new_month and (prev.year, prev.month) >= FIRST_SIGNAL and all(t in self.last_close for t in self.tickers):
+        rebalanced = new_month and (prev.year, prev.month) >= FIRST_SIGNAL and all(t in self.last_close for t in self.tickers)
+        if rebalanced:
             self._rebalance(prev, day)
+        elif refill:                                           # 월초가 아니면 재매수만 따로(전날 가치·가격으로 수량, 오늘 종가 체결)
+            sig = {t: [b for b in self.bars[t] if b[0] < day][-1][3] for t in self.tickers}
+            for ledger in refill:
+                ledger.buy_equity(sig, dict(self.last_close), self.halves.get(ledger.equity, DEFAULT_HALF_SPREAD))
         if self.started:
             prices = dict(self.last_close)
             for ledger in self.ledgers + [self.cash_ledger]:
                 ledger.daily.append((day, ledger.value(prices)))
+            for ledger in self.e_ledgers:
+                ledger.after_close(prices[ledger.equity])
         self.prev_day = day
+
+    def today_is(self, ticker, day):
+        bars = self.bars[ticker]
+        return bool(bars) and bars[-1][0] == day
 
     def _rebalance(self, signal, day):
         """신호일(전 거래일 = 월말)까지의 정보로 목표를 정하고 오늘(다음 거래일) 종가에 체결(계획서 9장 MOC)."""
@@ -117,6 +148,7 @@ class ProgramTradingEtfStep6(QCAlgorithm):
             for ledger in self.ledgers + [self.cash_ledger]:
                 ledger.daily.append((signal, float(INITIAL_CASH)))
         halves = {t: half_spread([(b[1], b[2], b[3]) for b in upto[t]]) for t in self.tickers}
+        self.halves = halves
         sigmas = {e: ewma_sigma([b[3] for b in upto[e]]) for e in EQUITY_TICKERS}
         recession = {(e, v): self.macro.regime(e, signal, v) for e in EQUITY_TICKERS for v in A2_VARIANTS}
         for ledger in self.ledgers:
@@ -194,6 +226,15 @@ class ProgramTradingEtfStep6(QCAlgorithm):
                 parts.append(f"{label}:" + "/".join(f"{w}={x:.1%}" if x is not None else f"{w}=na" for w, x in losses)
                              + ("" if ok else "!"))
             self.debug(f"[CRISIS {e}] window max loss (limit {DD_LIMIT:.0%}, ! = over) " + " ".join(parts))
+            for k in E_KINDS:
+                base_name = (f"M{int(round(MSTAR_FROZEN[e] * 100))}_{e}_base" if k == "M" else f"{k}_{e}_base")
+                l, s, sb = self.by_name[f"E{k}_{e}_base"], st[f"E{k}_{e}_base"], st[base_name]
+                crisis = "/".join(f"{w}={x:.1%}" if x is not None else f"{w}=na"
+                                  for w, x in [(w, window_mdd(l.daily, s0, s1)) for w, s0, s1 in CRISIS_WINDOWS])
+                self.debug(f"[E {e} {k}] {fmt(s)} | vs monthly logg {s['loggrowth'] - sb['loggrowth']:+.2%} "
+                           f"sh {s['sharpe'] - sb['sharpe']:+.2f} mdd {s['mdd'] - sb['mdd']:+.1%} | stops={l.stops} "
+                           f"week_refills={l.refills} month_returns={l.month_returns} out_days={l.out_days} | crisis {crisis} | high logg "
+                           f"{st[f'E{k}_{e}_high']['loggrowth']:+.2%}")
             high = [(label, name.replace("_base", "_high")) for label, name in names]
             self.debug(f"[HIGH {e}] cost x2 logg " + " ".join(f"{label}={st[n]['loggrowth']:+.2%}" for label, n in high)
                        + " | mdd " + " ".join(f"{label}={st[n]['mdd']:.1%}" for label, n in high))
