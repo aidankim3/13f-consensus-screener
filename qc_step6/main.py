@@ -181,7 +181,7 @@ class ProgramTradingEtfStep6(QCAlgorithm):
                          f"mdd/s={s['mdd_sigma']:.2f} cvar/s={s['cvar_sigma']:.2f} logg={s['loggrowth']:+.2%}")
         for e in EQUITY_TICKERS:
             grid = sorted((l.weight, st[l.name]["mdd"]) for l in self.ledgers
-                          if l.kind == "M" and l.equity == e and l.name.endswith("_base"))
+                          if l.kind == "M" and l.equity == e and l.name.endswith("_base") and not isinstance(l, ELedger))
             ok = [w for w, mdd in grid if mdd >= -DD_LIMIT]
             wstar = max(ok) if ok else None
             self.debug(f"[MSTAR {e}] w*={wstar} | " + " ".join(f"{int(w * 100)}:{mdd:.0%}" for w, mdd in grid))
